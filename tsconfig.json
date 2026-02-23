@@ -1,0 +1,19 @@
+/* 
+This controls how TypeScript compiles the Dirt project. It tells the compiler to process all .ts 
+files inside the dirt/ directory and output the compiled JavaScript into the dist/ folder.
+This ensures the entire interpreter is built consistently using a single compilation setup.
+*/
+
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "ES2022",
+      "moduleResolution": "Bundler",
+      "outDir": "dist",
+      "rootDir": ".",
+      "strict": true,
+      "skipLibCheck": true,
+      "types": ["node"]
+    },
+    "include": ["dirt/**/*.ts"]
+  }

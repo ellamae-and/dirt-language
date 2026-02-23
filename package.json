@@ -1,0 +1,29 @@
+{
+  "name": "project-ellaand",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dirt": "node dist/dirt/cli/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cordcs470spring2026/project-ellaand.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cordcs470spring2026/project-ellaand/issues"
+  },
+  "homepage": "https://github.com/cordcs470spring2026/project-ellaand#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
+  }
+}
