@@ -15,4 +15,15 @@ export class Environment {
       }
       return this.values.get(name);
     }
+  
+     //create a display-friendly view of runtime memory
+  dump(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [k, v] of this.values.entries()) {
+      if (typeof v === "function") out[k] = "<native function>";
+      else if (typeof v === "string") out[k] = JSON.stringify(v);
+      else out[k] = String(v);
+    }
+    return out;
   }
+}

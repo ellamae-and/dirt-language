@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dirt Web IDE</title>
+  </head>
+
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header-left">
+          <h1>Dirt Web IDE</h1>
+          <p>Simple interpreter for the Dirt programming language</p>
+        </div>
+
+        <div class="header-right">
+<!--           <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
+            <span class="icon-text">Light</span>
+          </button> -->
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="topbar">
+          <div class="label">Example:</div>
+
+          <div class="select-wrap">
+            <select id="examples" class="select">
+              <option value="hello">Hello World</option>
+              <option value="math">Math</option>
+              <option value="multi">Multiple Prints</option>
+            </select>
+            <span class="chev" aria-hidden="true">▾</span>
+          </div>
+        </div>
+
+        <div class="grid">
+          <!------- Editor ------->
+          <section class="card editor-card">
+            <div class="editor">
+              <div class="gutter" aria-hidden="true">
+              </div>
+
+              <textarea
+                id="editor"
+                class="code"
+                spellcheck="false"
+                aria-label="Code editor"
+              ></textarea>
+            </div>
+
+            <div class="actions">
+              <button id="runBtn" class="btn btn-primary" type="button">
+                <span class="play" aria-hidden="true">▶</span>
+                Run
+              </button>
+              <button id="clearBtn" class="btn btn-secondary" type="button">
+                Clear
+              </button>
+            </div>
+          </section>
+
+          <!------- Output of Program ------->
+          <section class="card output-card">
+            <div class="tabs">
+              <button class="tab is-active" data-tab="output" type="button">Output</button>
+              <button class="tab" data-tab="tokens" type="button">Tokens</button>
+              <button class="tab" data-tab="ast" type="button">AST</button>
+              <button class="tab" data-tab="env" type="button">Env</button>
+            </div>
+
+            <div class="output">
+              <pre id="outBox" data-pane="output"></pre>
+              <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
+              <pre id="astBox" data-pane="ast" class="is-hidden"></pre>
+              <pre id="envBox" data-pane="env" class="is-hidden"></pre>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!------- Dirt Program Entry ------->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

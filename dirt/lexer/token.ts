@@ -15,7 +15,7 @@ export enum TokenType {
     Number, // like 123 or 3.14
     Identifier, // names like print, x, variableName
   
-    // special token addat the end of input so parser knows it's reached the end
+    // special token at the end of input so parser knows it's reached the end
     EOF
   }
   
