@@ -1,32 +1,22 @@
 import "./style.css";
-
 import { runProgramDebug } from "../../dirt/runtime/runProgram";
 
 /* ======================================================
    THEME TOGGLE (Light / Dark)
 ====================================================== */
 
-// Root HTML element used to toggle theme attributes
 const root = document.documentElement;
-// Theme toggle button in the header
 const themeToggle = document.querySelector<HTMLButtonElement>("#themeToggle");
 
 if (themeToggle) {
-   // Icon elements inside the toggle button
   const icon = themeToggle.querySelector<HTMLElement>(".icon");
   const iconText = themeToggle.querySelector<HTMLElement>(".icon-text");
 
-    /**
-   * Applies the selected theme to the page
-   * @param mode "light" or "dark"
-   */
   function setTheme(mode: "light" | "dark") {
-      // Dark theme
     if (mode === "dark") {
       root.setAttribute("data-theme", "dark");
       if (icon) icon.textContent = "";
       if (iconText) iconText.textContent = "Dark";
-          // Light theme
     } else {
       root.removeAttribute("data-theme");
       if (icon) icon.textContent = "";
@@ -34,116 +24,235 @@ if (themeToggle) {
     }
   }
 
-    /**
-   * Initializes the theme when the page loads.
-   * Checks localStorage first, otherwise uses system preference.
-   */
   function initTheme() {
-        // Load saved theme from browser storage
     const saved = localStorage.getItem("theme") as "dark" | "light" | null;
-
-
-    // If user has never selected a theme, follow system preference
     if (!saved) {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       setTheme(prefersDark ? "dark" : "light");
       return;
     }
-
-    // Apply saved theme
     setTheme(saved);
   }
 
-    // Toggle theme when button is clicked
   themeToggle.addEventListener("click", () => {
     const isDark = root.getAttribute("data-theme") === "dark";
-        // Switch to opposite theme
     const next: "light" | "dark" = isDark ? "light" : "dark";
     setTheme(next);
-        // Save user preference
     localStorage.setItem("theme", next);
   });
 
-    // Run theme initialization
   initTheme();
 }
 
 /* ======================================================
-   EXISTING IDE LOGIC
+   IDE ELEMENTS
 ====================================================== */
 
-// Code editor where users type Dirt programs
 const editor = document.querySelector<HTMLTextAreaElement>("#editor")!;
-// Example program dropdown
 const examples = document.querySelector<HTMLSelectElement>("#examples")!;
 
-// Run / clear buttons
 const runBtn = document.querySelector<HTMLButtonElement>("#runBtn")!;
 const clearBtn = document.querySelector<HTMLButtonElement>("#clearBtn")!;
+const saveBtn = document.querySelector<HTMLButtonElement>("#saveBtn")!;
+const newBtn = document.querySelector<HTMLButtonElement>("#newBtn")!;
+const deleteBtn = document.querySelector<HTMLButtonElement>("#deleteBtn")!;
 
-// Output panels
 const outBox = document.querySelector<HTMLPreElement>("#outBox")!;
 const tokBox = document.querySelector<HTMLPreElement>("#tokBox")!;
 const astBox = document.querySelector<HTMLPreElement>("#astBox")!;
 const envBox = document.querySelector<HTMLPreElement>("#envBox")!;
 
-// Tab buttons and pane containers
 const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
 const panes = Array.from(document.querySelectorAll<HTMLElement>("[data-pane]"));
 
+/* ======================================================
+   PROGRAM TYPES
+====================================================== */
+
+type BuiltinProgram = {
+  id: number;
+  name: string;
+  code: string;
+  source: "builtin";
+};
+
+type SavedProgram = {
+  id: number;
+  name: string;
+  code: string;
+  createdAt?: string | null;
+  source: "saved";
+};
+
+type ProgramRecord = BuiltinProgram | SavedProgram;
+
+const BUILTIN_PROGRAMS: BuiltinProgram[] = [
+  {
+    id: 0,
+    name: "Hello World",
+    code: "print(1 + 2 * 3);",
+    source: "builtin",
+  }
+];
+
+let programList: ProgramRecord[] = [];
+let currentProgramId: number | null = null;
+let currentProgramSource: "builtin" | "saved" | null = null;
 
 /* ======================================================
-   BUILT-IN EXAMPLE PROGRAMS
+   SERVER API
 ====================================================== */
-const EXAMPLES: Record<string, { fileLabel: string; code: string }> = {
-  hello: {
-    fileLabel: "examples/hello.dirt",
-    code: "print(1 + 2 * 3);",
-  },
-  math: {
-    fileLabel: "examples/math.dirt",
-    code: "print(10 / 2 + 7 * 2);\nprint(5 + 5 * 5);",
-  },
-  multi: {
-    fileLabel: "examples/multi.dirt",
-    code: "print(1 + 2);\nprint(3 * 4);\nprint(9 - 2);",
-  },
-};
+
+const API_BASE = "http://localhost:3000";
+
+async function fetchSavedPrograms(): Promise<SavedProgram[]> {
+  const response = await fetch(`${API_BASE}/programs`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch programs.");
+  }
+
+  const rows = await response.json();
+  return rows.map((row: any) => ({
+    id: Number(row.id),
+    name: String(row.name),
+    code: String(row.code),
+    createdAt: row.createdAt ?? row.created_at ?? null,
+    source: "saved" as const,
+  }));
+}
+
+async function fetchSavedProgramById(id: number): Promise<SavedProgram> {
+  const response = await fetch(`${API_BASE}/programs/${id}`);
+  if (!response.ok) {
+    throw new Error("Failed to load program.");
+  }
+
+  const row = await response.json();
+  return {
+    id: Number(row.id),
+    name: String(row.name),
+    code: String(row.code),
+    createdAt: row.createdAt ?? row.created_at ?? null,
+    source: "saved",
+  };
+}
+
+async function saveProgramToServer(id: number | null, name: string, code: string): Promise<SavedProgram> {
+  const response = await fetch(`${API_BASE}/programs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id, name, code }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save program.");
+  }
+
+  const row = await response.json();
+  return {
+    id: Number(row.id),
+    name: String(row.name),
+    code: String(row.code),
+    createdAt: row.createdAt ?? row.created_at ?? null,
+    source: "saved",
+  };
+}
+
+async function deleteProgramFromServer(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/programs/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete program.");
+  }
+}
+
+/* ======================================================
+   PROGRAM LIST / DROPDOWN
+====================================================== */
+
+async function renderProgramDropdown() {
+  const savedPrograms = await fetchSavedPrograms();
+  programList = [...BUILTIN_PROGRAMS, ...savedPrograms];
+
+  examples.innerHTML = "";
+
+  for (const program of programList) {
+    const option = document.createElement("option");
+    option.value = `${program.source}:${program.id}`;
+    option.textContent = program.name;
+    examples.appendChild(option);
+  }
+
+  if (currentProgramId !== null && currentProgramSource !== null) {
+    const value = `${currentProgramSource}:${currentProgramId}`;
+    const exists = Array.from(examples.options).some(opt => opt.value === value);
+    if (exists) {
+      examples.value = value;
+    }
+  }
+}
+
+function setEditorLabel(name: string) {
+  const chip = document.querySelector<HTMLElement>(".chip");
+  if (chip) chip.textContent = `Project: ${name}`;
+}
+
+function getBuiltInProgramById(id: number): BuiltinProgram | undefined {
+  return BUILTIN_PROGRAMS.find(p => p.id === id);
+}
+
+async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
+  if (source === "builtin") {
+    const program = getBuiltInProgramById(id);
+    if (!program) return;
+
+    currentProgramId = program.id;
+    currentProgramSource = "builtin";
+    editor.value = program.code;
+    setEditorLabel(program.name);
+    examples.value = `builtin:${program.id}`;
+    return;
+  }
+
+  const program = await fetchSavedProgramById(id);
+  currentProgramId = program.id;
+  currentProgramSource = "saved";
+  editor.value = program.code;
+  setEditorLabel(program.name);
+  examples.value = `saved:${program.id}`;
+}
+
+async function initializePrograms() {
+  await renderProgramDropdown();
+  await loadProgramIntoEditor("builtin", 0);
+}
 
 /* ======================================================
    TAB MANAGEMENT
 ====================================================== */
 
-/**
- * Activates a specific output tab and hides others
- */
-
-  // Highlight selected tab button
 function setActiveTab(id: string) {
   tabs.forEach(t => t.classList.toggle("is-active", t.dataset.tab === id));
-    // Show corresponding pane
   panes.forEach(p => p.classList.toggle("is-hidden", p.dataset.pane !== id));
 }
-
 
 /* ======================================================
    DEBUG VISUALIZATION HELPERS
 ====================================================== */
 
-/**
- * Formats tokens into readable debug lines
- */
-
 function tokenToPrettyLine(t: any): string {
   if (t.type === undefined) return JSON.stringify(t);
-  if (t.literal !== undefined) return `Token(type=${t.type}, lexeme="${t.lexeme}", literal=${t.literal})`;
+  if (t.literal !== undefined) {
+    return `Token(type=${t.type}, lexeme="${t.lexeme}", literal=${t.literal})`;
+  }
   if (t.lexeme) return `Token(type=${t.type}, lexeme="${t.lexeme}")`;
   return `Token(type=${t.type})`;
 }
 
-/**
- * Converts AST nodes into a tree-style debug display
- */
 function astToTree(node: any, indent = ""): string {
   if (!node) return `${indent}<null>`;
 
@@ -153,15 +262,12 @@ function astToTree(node: any, indent = ""): string {
     return lines.join("\n");
   }
 
-    // Expression statement
   if (node.kind === "ExprStmt") {
     return `${indent}ExprStmt\n${astToTree(node.expr, indent + "  ")}`;
   }
 
-    // Number literal
   if (node.kind === "Number") return `${indent}Number(${node.value})`;
 
-    // Binary operation
   if (node.kind === "Binary") {
     return [
       `${indent}Binary("${node.op}")`,
@@ -170,7 +276,6 @@ function astToTree(node: any, indent = ""): string {
     ].join("\n");
   }
 
-    // Function call
   if (node.kind === "Call") {
     const lines = [`${indent}Call("${node.callee}")`];
     for (const a of node.args ?? []) lines.push(astToTree(a, indent + "  "));
@@ -184,9 +289,6 @@ function astToTree(node: any, indent = ""): string {
    OUTPUT MANAGEMENT
 ====================================================== */
 
-/**
- * Clears all output panels
- */
 function renderEmpty() {
   outBox.textContent = "";
   tokBox.textContent = "";
@@ -194,35 +296,25 @@ function renderEmpty() {
   envBox.textContent = "";
 }
 
-/**
- * Executes the current program in the editor
- * and displays interpreter debug output
- */
-
 function run() {
   const source = editor.value;
-
-    // Execute Dirt interpreter
   const result = runProgramDebug(source, { sourcePath: "web-ide" });
 
-    // Handle runtime error
   if (!result.ok) {
     outBox.textContent =
-      (result.output?.length
-        ? result.output.map(x => `> ${x}`).join("\n") + "\n"
-        : "") + `Error: ${result.error}`;
+      (result.output?.length ? result.output.map(x => `> ${x}`).join("\n") + "\n" : "") +
+      `Error: ${result.error}`;
     tokBox.textContent = "";
     astBox.textContent = "";
     envBox.textContent = "";
     setActiveTab("output");
     return;
   }
-    // Display program output
+
   outBox.textContent = result.output.length
     ? result.output.map(x => `> ${x}`).join("\n")
     : "> (no output)";
 
-  // Display debugging information
   tokBox.textContent = result.tokens.map(tokenToPrettyLine).join("\n");
   astBox.textContent = astToTree(result.ast);
   envBox.textContent = JSON.stringify(result.env, null, 2);
@@ -230,28 +322,75 @@ function run() {
   setActiveTab("output");
 }
 
-
 /* ======================================================
-   EXAMPLE LOADER
+   PROJECT ACTIONS
 ====================================================== */
 
-/**
- * Loads a sample Dirt program into the editor
- */
+async function saveCurrentProgram() {
+  const current =
+    currentProgramSource === "saved"
+      ? programList.find(p => p.source === "saved" && p.id === currentProgramId)
+      : programList.find(p => p.source === "builtin" && p.id === currentProgramId);
 
-function setExample(key: string) {
-  const ex = EXAMPLES[key] ?? EXAMPLES.hello;
-  editor.value = ex.code;
+  const suggestedName = current ? current.name : "New Program";
 
-  const chip = document.querySelector<HTMLElement>(".chip");
-  if (chip) chip.textContent = `File: ${ex.fileLabel}`;
+  const name = window.prompt("Enter a project name:", suggestedName);
+  if (!name) return;
+
+  const trimmedName = name.trim();
+  if (!trimmedName) return;
+
+  const savedId = currentProgramSource === "saved" ? currentProgramId : null;
+
+  const savedProgram = await saveProgramToServer(savedId, trimmedName, editor.value);
+
+  currentProgramId = savedProgram.id;
+  currentProgramSource = "saved";
+
+  await renderProgramDropdown();
+  await loadProgramIntoEditor("saved", savedProgram.id);
+}
+
+function createNewProgram() {
+  currentProgramId = null;
+  currentProgramSource = null;
+  editor.value = "";
+  setEditorLabel("Untitled");
+  renderEmpty();
+  setActiveTab("output");
+}
+
+async function deleteCurrentProgram() {
+  if (currentProgramId === null || currentProgramSource === null) return;
+
+  if (currentProgramSource === "builtin") {
+    window.alert("Built-in example programs cannot be deleted.");
+    return;
+  }
+
+  const current = programList.find(
+    p => p.source === "saved" && p.id === currentProgramId
+  );
+
+  if (!current) return;
+
+  const confirmed = window.confirm(`Delete "${current.name}"?`);
+  if (!confirmed) return;
+
+  await deleteProgramFromServer(current.id);
+
+  currentProgramId = 0;
+  currentProgramSource = "builtin";
+
+  await renderProgramDropdown();
+  await loadProgramIntoEditor("builtin", 0);
+  renderEmpty();
 }
 
 /* ======================================================
    EVENT LISTENERS
 ====================================================== */
 
-// Tab switching
 tabs.forEach(btn => {
   btn.addEventListener("click", () => {
     const id = btn.dataset.tab!;
@@ -259,24 +398,57 @@ tabs.forEach(btn => {
   });
 });
 
-// Example dropdown
-examples.addEventListener("change", () => setExample(examples.value));
-// Run program
+examples.addEventListener("change", async () => {
+  const [source, idText] = examples.value.split(":");
+  const id = Number(idText);
+
+  if (source === "builtin") {
+    await loadProgramIntoEditor("builtin", id);
+  } else {
+    await loadProgramIntoEditor("saved", id);
+  }
+});
+
 runBtn.addEventListener("click", run);
-// Clear editor/output
+
 clearBtn.addEventListener("click", () => {
   renderEmpty();
   editor.value = "";
   setActiveTab("output");
 });
 
+saveBtn.addEventListener("click", async () => {
+  try {
+    await saveCurrentProgram();
+  } catch (error) {
+    console.error(error);
+    window.alert("Could not save program.");
+  }
+});
+
+newBtn.addEventListener("click", createNewProgram);
+
+deleteBtn.addEventListener("click", async () => {
+  try {
+    await deleteCurrentProgram();
+  } catch (error) {
+    console.error(error);
+    window.alert("Could not delete program.");
+  }
+});
+
 /* ======================================================
    INITIALIZATION
 ====================================================== */
 
-// Load default example
-setExample("hello");
-// Clear outputs
-renderEmpty();
-// Default tab
-setActiveTab("output");
+(async function init() {
+  try {
+    await initializePrograms();
+  } catch (error) {
+    console.error(error);
+    window.alert("Could not load programs from the database.");
+  }
+
+  renderEmpty();
+  setActiveTab("output");
+})();

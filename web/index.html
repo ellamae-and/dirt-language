@@ -23,16 +23,16 @@
 
       <main class="content">
         <div class="topbar">
-          <div class="label">Example:</div>
-
+          <div class="label">Projects:</div>
+        
           <div class="select-wrap">
-            <select id="examples" class="select">
-              <option value="hello">Hello World</option>
-              <option value="math">Math</option>
-              <option value="multi">Multiple Prints</option>
-            </select>
+            <select id="examples" class="select"></select>
             <span class="chev" aria-hidden="true">▾</span>
           </div>
+        
+          <button id="newBtn" class="btn btn-secondary" type="button">New</button>
+          <button id="saveBtn" class="btn btn-secondary" type="button">Save Project</button>
+          <button id="deleteBtn" class="btn btn-secondary" type="button">Delete</button>
         </div>
 
         <div class="grid">
@@ -80,6 +80,8 @@
         </div>
       </main>
     </div>
+
+    
 
     <!------- Dirt Program Entry ------->
     <script type="module" src="/src/main.ts"></script>
