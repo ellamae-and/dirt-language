@@ -1,7 +1,4 @@
-/* =========================
-   THEME TOKENS
-   Default = LIGHT
-========================= */
+/*------THEME TOKENS-----*/
 :root {
     --bg: #f3f4f6;
     --surface: #ffffff;
@@ -32,7 +29,7 @@
     --output-green: #16a34a;
   }
   
-  /* DARK THEME */
+  /*-----DARK THEME-----*/
   :root[data-theme="dark"] {
     --bg: #0b0f19;
     --surface: #0f172a;
@@ -62,9 +59,7 @@
     --output-green: #22c55e;
   }
   
-  /* =========================
-     BASE
-  ========================= */
+  /*-----BASE-----*/
   * {
     box-sizing: border-box;
   }
@@ -82,9 +77,7 @@
     color: var(--text);
   }
   
-  /* =========================
-     LAYOUT
-  ========================= */
+  /*-----LAYOUT-----*/
   .app {
     max-width: 1040px;
     margin: 40px auto;
@@ -123,9 +116,7 @@
     height: 18px;
   }
   
-  /* =========================
-     THEME TOGGLE BUTTON
-  ========================= */
+  /*-----THEME TOGGLE BUTTON-----*/
   .icon-btn {
     display: inline-flex;
     align-items: center;
@@ -151,9 +142,7 @@
     font-size: 16px;
   }
   
-  /* =========================
-     CONTENT WRAPPER
-  ========================= */
+  /*-----CONTENT WRAPPER-----*/
   .content {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -200,9 +189,7 @@
     pointer-events: none;
   }
   
-  /* =========================
-     GRID
-  ========================= */
+  /*----- GRID-----*/
   .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -216,9 +203,7 @@
     overflow: hidden;
   }
   
-  /* =========================
-     EDITOR
-  ========================= */
+  /*-----EDITOR-----*/
   .editor-card {
     padding: 12px;
     background: var(--panel);
@@ -302,9 +287,7 @@
     background: var(--secondary-btn-hover);
   }
   
-  /* =========================
-     OUTPUT PANEL
-  ========================= */
+  /*-----OUTPUT PANEL-----*/
   .output-card {
     background: var(--panel);
   }
@@ -356,9 +339,7 @@
     font-weight: 700;
   }
   
-  /* =========================
-     RESPONSIVE
-  ========================= */
+  /*-----RESPONSIVE-----*/
   @media (max-width: 900px) {
     .grid {
       grid-template-columns: 1fr;

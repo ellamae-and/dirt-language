@@ -1,17 +1,31 @@
 import "./style.css";
+
+// Import the Dirt runtime debugger.
+// This function executes Dirt code and returns debugging information
+// including tokens, AST, environment state, and program output.
 import { runProgramDebug } from "../../dirt/runtime/runProgram";
 
 /* ======================================================
    THEME TOGGLE (Light / Dark)
+   Handles switching between light and dark themes
+   and persists the preference in localStorage.
 ====================================================== */
 
+// Reference to the root HTML element (<html>)
 const root = document.documentElement;
+
+// Button used to toggle the theme
 const themeToggle = document.querySelector<HTMLButtonElement>("#themeToggle");
 
 if (themeToggle) {
+
+    // Optional icon elements inside the toggle button
   const icon = themeToggle.querySelector<HTMLElement>(".icon");
   const iconText = themeToggle.querySelector<HTMLElement>(".icon-text");
 
+    /**
+   * Applies the selected theme to the document
+   */
   function setTheme(mode: "light" | "dark") {
     if (mode === "dark") {
       root.setAttribute("data-theme", "dark");
@@ -24,6 +38,11 @@ if (themeToggle) {
     }
   }
 
+    /**
+   * Initializes theme when the IDE loads.
+   * Uses saved preference if available,
+   * otherwise falls back to system preference.
+   */
   function initTheme() {
     const saved = localStorage.getItem("theme") as "dark" | "light" | null;
     if (!saved) {
@@ -33,6 +52,10 @@ if (themeToggle) {
     }
     setTheme(saved);
   }
+
+    /**
+   * Toggle between themes when the button is clicked
+   */
 
   themeToggle.addEventListener("click", () => {
     const isDark = root.getAttribute("data-theme") === "dark";
@@ -44,31 +67,44 @@ if (themeToggle) {
   initTheme();
 }
 
+
 /* ======================================================
    IDE ELEMENTS
+   References to UI components used in the web IDE
 ====================================================== */
 
+
+// Code editor where users write Dirt programs
 const editor = document.querySelector<HTMLTextAreaElement>("#editor")!;
+
+// Dropdown menu containing built-in and saved programs
 const examples = document.querySelector<HTMLSelectElement>("#examples")!;
 
+// Main action buttons
 const runBtn = document.querySelector<HTMLButtonElement>("#runBtn")!;
 const clearBtn = document.querySelector<HTMLButtonElement>("#clearBtn")!;
 const saveBtn = document.querySelector<HTMLButtonElement>("#saveBtn")!;
 const newBtn = document.querySelector<HTMLButtonElement>("#newBtn")!;
 const deleteBtn = document.querySelector<HTMLButtonElement>("#deleteBtn")!;
 
+// Debugging output panels
 const outBox = document.querySelector<HTMLPreElement>("#outBox")!;
 const tokBox = document.querySelector<HTMLPreElement>("#tokBox")!;
 const astBox = document.querySelector<HTMLPreElement>("#astBox")!;
 const envBox = document.querySelector<HTMLPreElement>("#envBox")!;
 
+// Tab buttons and corresponding panel elements
 const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
 const panes = Array.from(document.querySelectorAll<HTMLElement>("[data-pane]"));
 
 /* ======================================================
    PROGRAM TYPES
+   Defines the data structures used for programs
 ====================================================== */
 
+/**
+ * Built-in example programs included with the IDE.
+ */
 type BuiltinProgram = {
   id: number;
   name: string;
@@ -76,6 +112,9 @@ type BuiltinProgram = {
   source: "builtin";
 };
 
+/**
+ * Programs saved by the user in the database.
+ */
 type SavedProgram = {
   id: number;
   name: string;
@@ -84,8 +123,14 @@ type SavedProgram = {
   source: "saved";
 };
 
+/**
+ * A program record can be either built-in or saved.
+ */
 type ProgramRecord = BuiltinProgram | SavedProgram;
 
+/**
+ * Default programs shipped with the IDE.
+ */
 const BUILTIN_PROGRAMS: BuiltinProgram[] = [
   {
     id: 0,
@@ -95,16 +140,23 @@ const BUILTIN_PROGRAMS: BuiltinProgram[] = [
   }
 ];
 
+// Current program state
 let programList: ProgramRecord[] = [];
 let currentProgramId: number | null = null;
 let currentProgramSource: "builtin" | "saved" | null = null;
 
 /* ======================================================
    SERVER API
+   Handles communication with the backend database API
 ====================================================== */
 
+// Base URL of the local server
 const API_BASE = "http://localhost:3000";
 
+
+/**
+ * Fetch all saved programs from the server.
+ */
 async function fetchSavedPrograms(): Promise<SavedProgram[]> {
   const response = await fetch(`${API_BASE}/programs`);
   if (!response.ok) {
@@ -127,6 +179,7 @@ async function fetchSavedProgramById(id: number): Promise<SavedProgram> {
     throw new Error("Failed to load program.");
   }
 
+    // Normalize server response format
   const row = await response.json();
   return {
     id: Number(row.id),
@@ -174,6 +227,11 @@ async function deleteProgramFromServer(id: number): Promise<void> {
    PROGRAM LIST / DROPDOWN
 ====================================================== */
 
+/**
+ * Loads built-in and saved programs
+ * and populates the dropdown menu.
+ */
+
 async function renderProgramDropdown() {
   const savedPrograms = await fetchSavedPrograms();
   programList = [...BUILTIN_PROGRAMS, ...savedPrograms];
@@ -187,6 +245,8 @@ async function renderProgramDropdown() {
     examples.appendChild(option);
   }
 
+
+    // Restore previously selected program if possible
   if (currentProgramId !== null && currentProgramSource !== null) {
     const value = `${currentProgramSource}:${currentProgramId}`;
     const exists = Array.from(examples.options).some(opt => opt.value === value);
@@ -196,15 +256,28 @@ async function renderProgramDropdown() {
   }
 }
 
+
+
+/**
+ * Updates the project label shown above the editor.
+ */
 function setEditorLabel(name: string) {
   const chip = document.querySelector<HTMLElement>(".chip");
   if (chip) chip.textContent = `Project: ${name}`;
 }
 
+
+/**
+ * Retrieves a built-in program by ID.
+ */
 function getBuiltInProgramById(id: number): BuiltinProgram | undefined {
   return BUILTIN_PROGRAMS.find(p => p.id === id);
 }
 
+
+/**
+ * Loads a program into the editor.
+ */
 async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
   if (source === "builtin") {
     const program = getBuiltInProgramById(id);
@@ -226,6 +299,10 @@ async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
   examples.value = `saved:${program.id}`;
 }
 
+
+/**
+ * Initializes programs when the IDE loads.
+ */
 async function initializePrograms() {
   await renderProgramDropdown();
   await loadProgramIntoEditor("builtin", 0);
@@ -233,8 +310,12 @@ async function initializePrograms() {
 
 /* ======================================================
    TAB MANAGEMENT
+   Controls which debug panel is visible
 ====================================================== */
 
+/**
+ * Activates the selected tab and hides others.
+ */
 function setActiveTab(id: string) {
   tabs.forEach(t => t.classList.toggle("is-active", t.dataset.tab === id));
   panes.forEach(p => p.classList.toggle("is-hidden", p.dataset.pane !== id));
@@ -242,8 +323,12 @@ function setActiveTab(id: string) {
 
 /* ======================================================
    DEBUG VISUALIZATION HELPERS
+   Converts tokens and AST structures into readable text
 ====================================================== */
 
+/**
+ * Converts a token object into a readable string.
+ */
 function tokenToPrettyLine(t: any): string {
   if (t.type === undefined) return JSON.stringify(t);
   if (t.literal !== undefined) {
@@ -253,6 +338,10 @@ function tokenToPrettyLine(t: any): string {
   return `Token(type=${t.type})`;
 }
 
+
+/**
+ * Recursively prints the AST structure in a tree format.
+ */
 function astToTree(node: any, indent = ""): string {
   if (!node) return `${indent}<null>`;
 
@@ -289,6 +378,9 @@ function astToTree(node: any, indent = ""): string {
    OUTPUT MANAGEMENT
 ====================================================== */
 
+/**
+ * Clears all output/debug panels.
+ */
 function renderEmpty() {
   outBox.textContent = "";
   tokBox.textContent = "";
@@ -296,6 +388,11 @@ function renderEmpty() {
   envBox.textContent = "";
 }
 
+
+/**
+ * Executes the Dirt program currently in the editor.
+ * Displays output, tokens, AST, and environment state.
+ */
 function run() {
   const source = editor.value;
   const result = runProgramDebug(source, { sourcePath: "web-ide" });
