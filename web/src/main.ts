@@ -395,7 +395,10 @@ function renderEmpty() {
  */
 function run() {
   const source = editor.value;
-  const result = runProgramDebug(source, { sourcePath: "web-ide" });
+  const result = runProgramDebug(editor.value, {
+    sourcePath: "web-ide",
+    graphics: dirtGraphics,
+  });
 
   if (!result.ok) {
     outBox.textContent =
@@ -549,3 +552,55 @@ deleteBtn.addEventListener("click", async () => {
   renderEmpty();
   setActiveTab("output");
 })();
+
+/* ======================================================
+   DIRT GRAPHICS BRIDGE
+====================================================== */
+
+const gameCanvas = document.querySelector<HTMLCanvasElement>("#gameCanvas");
+
+type DirtGraphicsBridge = {
+  clear: () => void;
+  rect: (x: number, y: number, width: number, height: number) => void;
+  circle: (x: number, y: number, radius: number) => void;
+};
+
+let dirtGraphics: DirtGraphicsBridge | undefined;
+
+if (gameCanvas) {
+  const ctx = gameCanvas.getContext("2d")!;
+
+  if (ctx) {
+    const WIDTH = gameCanvas.width;
+    const HEIGHT = gameCanvas.height;
+
+    function drawBackground() {
+      ctx.fillStyle = "#0b1220";
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.strokeRect(1, 1, WIDTH - 2, HEIGHT - 2);
+    }
+
+    dirtGraphics = {
+      clear() {
+        drawBackground();
+      },
+
+      rect(x: number, y: number, width: number, height: number) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x, y, width, height);
+      },
+
+      circle(x: number, y: number, radius: number) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.closePath();
+      },
+    };
+
+    drawBackground();
+  }
+}

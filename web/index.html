@@ -15,9 +15,9 @@
         </div>
 
         <div class="header-right">
-<!--           <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
+      <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
             <span class="icon-text">Light</span>
-          </button> -->
+          </button> 
         </div>
       </header>
 
@@ -75,6 +75,22 @@
               <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
               <pre id="astBox" data-pane="ast" class="is-hidden"></pre>
               <pre id="envBox" data-pane="env" class="is-hidden"></pre>
+            </div>
+          </section>
+          <section class="card game-card">
+            <div class="panel-header">
+              <h2>Game Canvas</h2>
+              <p>Plain TypeScript render test</p>
+            </div>
+          
+            <div class="game-wrap">
+              <canvas
+                id="gameCanvas"
+                class="game-canvas"
+                width="640"
+                height="360"
+                aria-label="Game canvas"
+              ></canvas>
             </div>
           </section>
         </div>

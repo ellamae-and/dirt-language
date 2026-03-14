@@ -194,6 +194,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 18px;
+    align-items: start;
   }
   
   .card {
@@ -364,3 +365,44 @@
     color: var(--text);
     border: 1px solid var(--border);
   }
+
+
+  /*-----GAME PANEL-----*/
+.game-card {
+  padding: 14px;
+  background: var(--panel);
+}
+
+.panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.panel-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.game-wrap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background:
+    radial-gradient(circle at center, #13203a 0%, #0b1220 70%, #060b14 100%);
+}

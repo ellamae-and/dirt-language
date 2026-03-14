@@ -4,8 +4,15 @@ import { Environment } from "./environment.js";
 import { registerBuiltins } from "../stdlib/builtins.js";
 import { Interpreter } from "./interpreter.js";
 
+export type DirtGraphicsAPI = {
+  clear: () => void;
+  rect: (x: number, y: number, width: number, height: number) => void;
+  circle: (x: number, y: number, radius: number) => void;
+};
+
 export type DirtConfig = {
   sourcePath?: string;
+  graphics?: DirtGraphicsAPI;
 };
 
 // runs a Dirt program from a source string
@@ -14,20 +21,19 @@ export function runProgram(source: string, config: DirtConfig) {
   const program = parse(tokens);
 
   const globalEnv = new Environment();
-  registerBuiltins(globalEnv);
+  registerBuiltins(globalEnv, config);
 
   const interpreter = new Interpreter(globalEnv, config);
   interpreter.executeProgram(program);
 }
 
-// NEW: returns debug info for the Web IDE
+// returns debug info for the Web IDE
 export function runProgramDebug(source: string, config: DirtConfig) {
   const output: string[] = [];
 
-  // capture console.log temporarily (because your built-in print uses console.log)
   const originalLog = console.log;
   console.log = (...args: unknown[]) => {
-    output.push(args.map(a => String(a)).join(" "));
+    output.push(args.map((a) => String(a)).join(" "));
   };
 
   try {
@@ -35,7 +41,7 @@ export function runProgramDebug(source: string, config: DirtConfig) {
     const program = parse(tokens);
 
     const globalEnv = new Environment();
-    registerBuiltins(globalEnv);
+    registerBuiltins(globalEnv, config);
 
     const interpreter = new Interpreter(globalEnv, config);
     interpreter.executeProgram(program);
