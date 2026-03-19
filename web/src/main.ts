@@ -135,7 +135,7 @@ const BUILTIN_PROGRAMS: BuiltinProgram[] = [
   {
     id: 0,
     name: "Hello World",
-    code: "print(1 + 2 * 3);",
+    code: 'print("Hello World");',
     source: "builtin",
   }
 ];
