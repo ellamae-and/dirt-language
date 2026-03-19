@@ -378,9 +378,6 @@ function astToTree(node: any, indent = ""): string {
    OUTPUT MANAGEMENT
 ====================================================== */
 
-/**
- * Clears all output/debug panels.
- */
 function renderEmpty() {
   outBox.textContent = "";
   tokBox.textContent = "";

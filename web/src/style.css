@@ -319,9 +319,10 @@
   .output {
     padding: 16px 14px;
     min-height: 390px;
+    max-height: 390px;   
+    overflow-y: auto;    
     background: var(--surface);
   }
-  
   .out-line {
     display: flex;
     gap: 10px;
