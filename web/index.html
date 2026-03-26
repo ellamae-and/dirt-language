@@ -8,98 +8,198 @@
 
   <body>
     <div class="app">
-      <header class="header">
-        <div class="header-left">
-          <h1>Dirt Web IDE</h1>
-          <p>Simple interpreter for the Dirt programming language</p>
-        </div>
+      <div class="ide-box">
 
-        <div class="header-right">
-      <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
-            <span class="icon-text">Light</span>
-          </button> 
-        </div>
-      </header>
+        <header class="header">
+          <div class="header-left">
+            <!--
+              Geometric hex logo — a bold hexagon idles with a slow spin while
+              two organic leaf paths grow from its centre on page load.
+              Layers:
+                .hex-ring   — outer hex stroke, slow continuous rotation
+                .hex-fill   — inner solid hex, static
+                .hex-dirt   — amber mound at the base
+                .hex-stem   — stem grows upward from the mound
+                .hex-leaf-l — left leaf unfurls after stem
+                .hex-leaf-r — right leaf unfurls last, slightly darker
+              After the intro (~1.3s) the whole logo enters a gentle sway loop.
+            -->
+            <h1>
+              <svg class="hex-logo" aria-hidden="true"
+                   width="30" height="32" viewBox="0 0 30 32" fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
 
-      <main class="content">
-        <div class="topbar">
-          <div class="label">Projects:</div>
-        
-          <div class="select-wrap">
-            <select id="examples" class="select"></select>
-            <span class="chev" aria-hidden="true">▾</span>
+                <!-- Outer ring — spins slowly forever -->
+                <polygon class="hex-ring"
+                         points="15,2 27,9 27,23 15,30 3,23 3,9"/>
+
+                <!-- Inner filled hex -->
+                <polygon class="hex-fill"
+                         points="15,5 24,10.5 24,21.5 15,27 6,21.5 6,10.5"/>
+
+                <!-- Amber dirt mound at the base -->
+                <ellipse class="hex-dirt" cx="15" cy="27" rx="7" ry="2.5"/>
+
+                <!-- Stem grows up from the mound -->
+                <path class="hex-stem"
+                      d="M15 26 L15 14"
+                      stroke-width="2" stroke-linecap="round"/>
+
+                <!-- Left leaf -->
+                <path class="hex-leaf-l"
+                      d="M15 19 Q8 16 9 9 Q13 12 15 18"/>
+
+                <!-- Right leaf -->
+                <path class="hex-leaf-r"
+                      d="M15 15 Q22 12 22 5 Q18 9 15 15"/>
+
+              </svg>
+              Dirt Web IDE
+            </h1>
+            <p>Simple interpreter for the Dirt programming language</p>
           </div>
-        
-          <button id="newBtn" class="btn btn-secondary" type="button">New</button>
-          <button id="saveBtn" class="btn btn-secondary" type="button">Save Project</button>
-          <button id="deleteBtn" class="btn btn-secondary" type="button">Delete</button>
-        </div>
 
-        <div class="grid">
-          <!------- Editor ------->
-          <section class="card editor-card">
-            <div class="editor">
-              <div class="gutter" aria-hidden="true">
+          <div class="header-right">
+            <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
+              <span class="icon-text">Light</span>
+            </button>
+          </div>
+        </header>
+
+        <main class="content">
+          <div class="topbar">
+            <div class="label">Projects:</div>
+
+            <div class="select-wrap">
+              <select id="examples" class="select"></select>
+              <span class="chev" aria-hidden="true">▾</span>
+            </div>
+
+            <button id="newBtn" class="btn btn-secondary" type="button">New</button>
+
+            <!--
+              saveBtn gets the "has-unsaved" class added by JS whenever
+              the editor content drifts from the last saved snapshot.
+              The CSS shows a small amber dot when that class is present.
+            -->
+            <button id="saveBtn" class="btn btn-secondary" type="button">
+              <span class="unsaved-dot" aria-hidden="true"></span>Save Project
+            </button>
+
+            <button id="deleteBtn" class="btn btn-secondary" type="button">Delete</button>
+          </div>
+
+          <div class="grid">
+
+            <!------- Editor ------->
+            <section class="card editor-card">
+
+              <!--
+                The editor is a stack of two layers sharing the same font/padding:
+                  1. #highlightOverlay  — a <div> with colored HTML, pointer-events:none
+                  2. #editor            — the real <textarea> with transparent background
+
+                The textarea floats on top so typing works normally. The overlay
+                just provides the syntax colors that show through.
+              -->
+              <div class="editor">
+                <div class="gutter" aria-hidden="true"></div>
+
+                <div class="editor-stack">
+                  <div id="highlightOverlay" class="highlight-overlay" aria-hidden="true"></div>
+                  <textarea
+                    id="editor"
+                    class="code"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    aria-label="Code editor"
+                  ></textarea>
+                </div>
               </div>
 
-              <textarea
-                id="editor"
-                class="code"
-                spellcheck="false"
-                aria-label="Code editor"
-              ></textarea>
-            </div>
+              <!-- Error bar — hidden until a run fails -->
+              <div id="errorBar" class="error-bar is-hidden" aria-live="polite"></div>
 
-            <div class="actions">
-              <button id="runBtn" class="btn btn-primary" type="button">
-                <span class="play" aria-hidden="true">▶</span>
-                Run
-              </button>
-              <button id="clearBtn" class="btn btn-secondary" type="button">
-                Clear
-              </button>
-            </div>
-          </section>
+              <!--
+                Status bar — sits between the editor and the action buttons.
+                JS keeps these spans updated on every keystroke.
+              -->
+              <div class="status-bar" aria-label="Editor status">
+                <div class="status-left">
+                  <span id="statusCursor">Ln 1, Col 1</span>
+                  <span id="statusChars">0 chars</span>
+                  <span id="statusLines">0 lines</span>
+                </div>
+                <div class="status-right">
+                  <span class="status-pill">Dirt</span>
+                  <span>UTF-8</span>
+                </div>
+              </div>
 
-          <!------- Output of Program ------->
-          <section class="card output-card">
-            <div class="tabs">
-              <button class="tab is-active" data-tab="output" type="button">Output</button>
-              <button class="tab" data-tab="tokens" type="button">Tokens</button>
-              <button class="tab" data-tab="ast" type="button">AST</button>
-              <button class="tab" data-tab="env" type="button">Env</button>
-            </div>
+              <div class="actions">
+                <button id="runBtn" class="btn btn-primary" type="button">
+                  <span class="play" aria-hidden="true">▶</span>
+                  Run
+                </button>
+                <button id="clearBtn" class="btn btn-secondary" type="button">
+                  Clear
+                </button>
 
-            <div class="output">
-              <pre id="outBox" data-pane="output"></pre>
-              <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
-              <pre id="astBox" data-pane="ast" class="is-hidden"></pre>
-              <pre id="envBox" data-pane="env" class="is-hidden"></pre>
-            </div>
-          </section>
-          <section class="card game-card">
-            <div class="panel-header">
-              <h2>Game Canvas</h2>
-              <p>Plain TypeScript render test</p>
-            </div>
-          
-            <div class="game-wrap">
-              <canvas
-                id="gameCanvas"
-                class="game-canvas"
-                width="640"
-                height="360"
-                aria-label="Game canvas"
-              ></canvas>
-            </div>
-          </section>
-        </div>
-      </main>
+                <!-- Unsaved label on the right side of the action row -->
+                <span id="unsavedLabel" class="unsaved-label is-hidden" aria-live="polite">
+                  ● unsaved
+                </span>
+              </div>
+            </section>
+
+            <!------- Output + Canvas (shared panel) ------->
+            <section class="card output-card">
+              <div class="tabs">
+                <button class="tab is-active" data-tab="output"  type="button">Output</button>
+                <button class="tab"           data-tab="canvas"  type="button">Canvas</button>
+                <button class="tab"           data-tab="tokens"  type="button">Tokens</button>
+                <button class="tab"           data-tab="ast"     type="button">AST</button>
+                <button class="tab"           data-tab="env"     type="button">Env</button>
+              </div>
+
+              <div class="output">
+                <pre id="outBox" data-pane="output"></pre>
+                <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
+                <pre id="astBox" data-pane="ast"    class="is-hidden"></pre>
+                <pre id="envBox" data-pane="env"    class="is-hidden"></pre>
+
+                <div id="canvasPane" data-pane="canvas" class="canvas-pane is-hidden">
+                  <canvas
+                    id="gameCanvas"
+                    width="640"
+                    height="360"
+                    aria-label="Game canvas"
+                  ></canvas>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        </main>
+      </div>
     </div>
 
-    
+    <!--
+      Toast container — absolutely positioned, top-right corner.
+      JS appends individual .toast elements here and removes them after
+      they animate out. Lives outside .ide-box so it overlays everything.
+    -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-    <!------- Dirt Program Entry ------->
+    <!--
+      Spore drift background canvas — fixed behind the entire page.
+      Tiny green and amber particles float slowly upward, varying in size,
+      speed, and drift angle. A soil-coloured horizon arc sits at the bottom.
+      pointer-events:none so it never intercepts clicks.
+    -->
+    <canvas id="sporeBg" aria-hidden="true"></canvas>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

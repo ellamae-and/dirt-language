@@ -1,409 +1,869 @@
-/*------THEME TOKENS-----*/
+/* ─── Theme tokens ───────────────────────────────────────────────────────── */
 :root {
-    --bg: #f3f4f6;
-    --surface: #ffffff;
-    --panel: #f9fafb;
-    --muted-surface: #f5f5f5;
-    --border: #e5e7eb;
-  
-    --text: #111827;
-    --text-2: #4b5563;
-    --text-3: #6b7280;
-  
-    --beige: #e8dfc5;
-  
-    --btn: #16a34a;
-    --btn-hover: #15803d;
-    --btn-text: #ffffff;
-  
-    --secondary-btn: #e5e5e5;
-    --secondary-btn-hover: #d4d4d4;
-    --secondary-btn-text: #111827;
-  
-    --code-bg: #f5f5f5;
-    --gutter-bg: #ededed;
-  
-    --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
-    --radius: 5px;
-  
-    --output-green: #16a34a;
-  }
-  
-  /*-----DARK THEME-----*/
-  :root[data-theme="dark"] {
-    --bg: #0b0f19;
-    --surface: #0f172a;
-    --panel: #111b2e;
-    --muted-surface: #0b1220;
-    --border: #22304a;
-  
-    --text: #f3f4f6;
-    --text-2: #cbd5e1;
-    --text-3: #94a3b8;
-  
-    --beige: #2a2a22;
-  
-    --btn: #16a34a;
-    --btn-hover: #15803d;
-    --btn-text: #ffffff;
-  
-    --secondary-btn: #1f2937;
-    --secondary-btn-hover: #263244;
-    --secondary-btn-text: #f3f4f6;
-  
-    --code-bg: #0b1220;
-    --gutter-bg: #0a1020;
-  
-    --shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
-  
-    --output-green: #22c55e;
-  }
-  
-  /*-----BASE-----*/
-  * {
-    box-sizing: border-box;
-  }
-  
-  html,
-  body {
-    height: 100%;
-  }
-  
-  body {
-    margin: 0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
-      "Apple Color Emoji", "Segoe UI Emoji";
-    background: var(--bg);
-    color: var(--text);
-  }
-  
-  /*-----LAYOUT-----*/
-  .app {
-    max-width: 1040px;
-    margin: 40px auto;
-    padding: 0 18px;
-  }
-  
-  .header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px 24px;
-    box-shadow: var(--shadow);
-  }
-  
-  .header h1 {
-    margin: 0;
-    font-size: 34px;
-    letter-spacing: -0.02em;
-  }
-  
-  .header p {
-    margin: 8px 0 0;
-    color: var(--text-2);
-    font-size: 14px;
-  }
-  
-  .header-right {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .divider {
-    height: 18px;
-  }
-  
-  /*-----THEME TOGGLE BUTTON-----*/
-  .icon-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 15px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text);
-    font-weight: 600;
-  }
-  
-  .icon-btn:hover {
-    filter: brightness(0.95);
-  }
-  
-  .icon {
-    font-size: 16px;
-    line-height: 1;
-  }
-  
-  .icon-text {
-    font-size: 16px;
-  }
-  
-  /*-----CONTENT WRAPPER-----*/
-  .content {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px 24px 26px;
-    box-shadow: var(--shadow);
-  }
-  
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-  
-  .label {
-    font-weight: 600;
-    color: var(--text-2);
-    font-size: 14px;
-  }
-  
-  .select-wrap {
-    position: relative;
-    width: 280px;
-  }
-  
-  .select {
-    width: 100%;
-    appearance: none;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--beige);
-    padding: 12px 20px 12px 12px;
-    color: var(--text);
-    font-weight: 500;
-  }
-  
-  .chev {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-2);
-    pointer-events: none;
-  }
-  
-  /*----- GRID-----*/
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    align-items: start;
-  }
-  
-  .card {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--panel);
-    overflow: hidden;
-  }
-  
-  /*-----EDITOR-----*/
-  .editor-card {
-    padding: 12px;
-    background: var(--panel);
-  }
-  
-  .editor {
-    display: grid;
-    grid-template-columns: 44px 1fr;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  
-  .gutter {
-    background: var(--gutter-bg);
-    padding: 10px 0;
-    text-align: center;
-    color: var(--text-3);
-    font-weight: 600;
-    user-select: none;
-  }
-  
-  .gutter .line {
-    height: 24px;
-    line-height: 24px;
-  }
-  
-  .code {
-    background: var(--code-bg);
-    border: none;
-    outline: none;
-    resize: none;
-    padding: 10px 12px;
-    height: 340px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      "Liberation Mono", "Courier New", monospace;
-    font-size: 14px;
-    color: var(--text);
-  }
-  
-  .actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 14px;
-  }
-  
+  --bg:               #eef0f4;
+  --surface:          #ffffff;
+  --panel:            #f8f9fb;
+  --border:           #e2e5eb;
+  --border-strong:    #c8cdd6;
 
-  .btn {
-    border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .btn-primary {
-    background: var(--btn);
-    color: var(--btn-text);
-  }
-  
-  .btn-primary:hover {
-    background: var(--btn-hover);
-  }
-  
-  .play {
-    font-size: 16px;
-    margin-top: -1px;
-  }
-  
-  .btn-secondary {
-    background: var(--secondary-btn);
-    color: var(--secondary-btn-text);
-    border-color: var(--border);
-  }
-  
-  .btn-secondary:hover {
-    background: var(--secondary-btn-hover);
-  }
-  
-  /*-----OUTPUT PANEL-----*/
-  .output-card {
-    background: var(--panel);
-  }
-  
-  .tabs {
-    display: flex;
-    gap: 2px;
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  
-  .tab {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text-2);
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 14px;
-  }
-  
-  .tab.active {
-    background: var(--surface);
-    color: var(--text);
-    border-color: var(--border);
-  }
-  
-  .output {
-    padding: 16px 14px;
-    min-height: 390px;
-    max-height: 390px;   
-    overflow-y: auto;    
-    background: var(--surface);
-  }
-  .out-line {
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      "Liberation Mono", "Courier New", monospace;
-    font-size: 15px;
-  }
-  
-  .prompt {
-    color: var(--text);
-  }
-  
-  .out-green {
-    color: var(--output-green);
-    font-weight: 700;
-  }
-  
-  /*-----RESPONSIVE-----*/
-  @media (max-width: 900px) {
-    .grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .select-wrap {
-      width: 100%;
-    }
-  
-    .header {
-      flex-direction: column;
-      gap: 14px;
-    }
-  }
+  --text:             #0f1117;
+  --text-2:           #4a5260;
+  --text-3:           #8b92a0;
 
-.is-hidden {
-    display: none;
-  }
-  
-  .tab.is-active {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
+  --beige:            #ede8db;
 
+  --btn:              #16a34a;
+  --btn-hover:        #15803d;
+  --btn-text:         #ffffff;
 
-  /*-----GAME PANEL-----*/
-.game-card {
-  padding: 14px;
-  background: var(--panel);
+  --secondary-btn:        #e8eaee;
+  --secondary-btn-hover:  #dde0e6;
+  --secondary-btn-text:   #0f1117;
+
+  --code-bg:          #f4f5f7;
+  --gutter-bg:        #eaecf0;
+
+  --tab-active-bg:    #ffffff;
+  --tab-active-border:#e2e5eb;
+
+  --shadow:           0 2px 8px rgba(15,17,23,0.06), 0 8px 24px rgba(15,17,23,0.05);
+  --radius:           10px;
+  --card-radius:      14px;
+
+  --output-green:     #16a34a;
+
+  /* Height shared by the editor stack and the output panel */
+  --editor-height:    310px;
+
+  /* Status bar height — used to keep both cards balanced */
+  --status-bar-height: 28px;
 }
 
-.panel-header {
+/* ─── Dark theme ─────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --bg:               #080c14;
+  --surface:          #0d1424;
+  --panel:            #101828;
+  --border:           #1e2d45;
+  --border-strong:    #2a3d58;
+
+  --text:             #e8ecf4;
+  --text-2:           #8ea3be;
+  --text-3:           #4f647c;
+
+  --beige:            #1e2230;
+
+  --btn:              #16a34a;
+  --btn-hover:        #15803d;
+  --btn-text:         #ffffff;
+
+  --secondary-btn:        #162032;
+  --secondary-btn-hover:  #1c2a40;
+  --secondary-btn-text:   #e8ecf4;
+
+  --code-bg:          #090e1a;
+  --gutter-bg:        #080c18;
+
+  --tab-active-bg:    #0d1424;
+  --tab-active-border:#1e2d45;
+
+  --shadow:           0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.25);
+
+  --output-green:     #22c55e;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height:   100%;
+  overflow: hidden; /* prevent the page itself from scrolling */
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Spore drift background canvas ──────────────────────────────────────── */
+/*
+  Fixed behind everything. JS sizes it to the full viewport and redraws
+  on resize. pointer-events:none so it never blocks interaction.
+*/
+#sporeBg {
+  position:       fixed;
+  inset:          0;
+  width:          100%;
+  height:         100%;
+  pointer-events: none;
+  z-index:        -1;
+}
+
+/* ─── App shell ──────────────────────────────────────────────────────────── */
+/*
+  Fills the full viewport so the IDE never scrolls. The IDE card is centred
+  horizontally with a top bias (padding-top rather than true vertical centre)
+  so the spore background and horizon are visible below it.
+  overflow:auto on .app itself means if the viewport is very short the user
+  can still scroll within the app shell, but the background canvas stays fixed.
+*/
+.app {
+  max-width:  1080px;
+  width:      100%;
+  height:     100vh;
+  margin:     0 auto;
+  padding:    80px 20px 20px;
+  display:    flex;
+  flex-direction: column;
+  overflow-y: auto; /* allow internal scroll on very short viewports only */
+}
+
+.ide-box {
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 24px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.header-right { display: flex; gap: 8px; }
+
+/* ── Geometric hex logo ──────────────────────────────────────────────────── */
+/*
+  Intro sequence (one-shot on load):
+    0.15s — stem grows up from the mound (scaleY from bottom)
+    0.45s — left leaf unfurls (scale from stem joint)
+    0.65s — right leaf unfurls (scale from stem joint)
+  After ~1.3s the whole logo enters a gentle sway loop.
+  The outer hex ring spins slowly and continuously throughout.
+
+  transform-box: fill-box makes transform-origin relative to each
+  element's own bounding box so pivots work correctly.
+*/
+
+.hex-logo {
+  flex-shrink: 0;
+  overflow: visible;
+  animation: hexSway 4s ease-in-out 1.3s infinite;
+  transform-origin: 15px 27px; /* pivot at the base of the mound */
+}
+
+/* Outer ring — slow idle spin, independent of the sway */
+.hex-ring {
+  fill:             none;
+  stroke:           #16a34a;
+  stroke-width:     1.5;
+  opacity:          0.35;
+  transform-origin: 15px 16px; /* centre of the hex */
+  animation:        hexSpin 18s linear infinite;
+}
+
+.hex-fill {
+  fill:    #16a34a;
+  opacity: 0.18;
+}
+
+.hex-dirt {
+  fill:    #b45309;
+  opacity: 0.65;
+}
+
+.hex-stem {
+  stroke:           #16a34a;
+  fill:             none;
+  transform-box:    fill-box;
+  transform-origin: 50% 100%; /* scale from the bottom of the stem */
+  animation:        hexStemGrow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.hex-leaf-l {
+  fill:             #16a34a;
+  transform-box:    fill-box;
+  transform-origin: 100% 100%;
+  animation:        hexLeaf 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+}
+
+.hex-leaf-r {
+  fill:             #15803d;
+  transform-box:    fill-box;
+  transform-origin: 0% 100%;
+  animation:        hexLeaf 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.65s both;
+}
+
+@keyframes hexSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes hexStemGrow {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes hexLeaf {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes hexSway {
+  0%,  100% { transform: rotate(0deg);    }
+  25%        { transform: rotate(3.5deg); }
+  75%        { transform: rotate(-3.5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hex-logo, .hex-ring, .hex-stem, .hex-leaf-l, .hex-leaf-r {
+    animation: none;
+    transform: none;
+    opacity:   1;
+  }
+  .hex-ring { opacity: 0.35; }
+  .hex-fill { opacity: 0.18; }
+  .hex-dirt { opacity: 0.65; }
+}
+
+/* ─── Theme toggle ───────────────────────────────────────────────────────── */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.icon-btn:hover { background: var(--secondary-btn); color: var(--text); }
+.icon-text { font-size: 13px; }
+
+/* ─── Content wrapper ────────────────────────────────────────────────────── */
+.content {
+  background: var(--surface);
+  padding: 18px 20px 20px;
+}
+
+/* ─── Topbar ─────────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--text-3);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.select-wrap { position: relative; width: 260px; }
+
+.select {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--beige);
+  padding: 9px 32px 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.select:focus { outline: none; border-color: var(--border-strong); }
+
+.chev {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* ─── Unsaved dot inside Save button ─────────────────────────────────────── */
+/* The dot is always in the DOM but hidden via opacity.                      */
+/* JS adds .has-unsaved to #saveBtn to reveal it when content has changed.   */
+.unsaved-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;          /* amber — universally understood as "pending" */
+  margin-right: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+#saveBtn.has-unsaved .unsaved-dot {
+  opacity: 1;
+}
+
+/* ─── Grid ───────────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* ─── Card base ──────────────────────────────────────────────────────────── */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  background: var(--panel);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-bottom: 12px;
 }
 
-.panel-header h2 {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text);
-}
+/* ─── Editor card ────────────────────────────────────────────────────────── */
+.editor-card { padding: 12px; }
 
-.panel-header p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.game-wrap {
+.editor {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  border-radius: 10px;
   overflow: hidden;
-  background: #0b1220;
+  flex: 1;
 }
 
-.game-canvas {
+/* ─── Gutter ─────────────────────────────────────────────────────────────── */
+/*
+  The gutter MUST NOT have its own padding-top — that would offset the line
+  numbers from the textarea text, which has padding-top:10px baked into .code.
+  Instead we give the first .line element a top margin equal to that padding,
+  so line 1 sits exactly where the first text line starts.
+
+  overflow-y is hidden so the gutter never shows its own scrollbar.
+  Its scrollTop is driven entirely by the editor's scroll event in JS.
+  height matches --editor-height so it clips at exactly the right point.
+*/
+.gutter {
+  background: var(--gutter-bg);
+  padding: 0;                          /* no padding — spacing handled per-line */
+  text-align: center;
+  color: var(--text-3);
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco,
+    Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+  border-right: 1px solid var(--border);
+  overflow-y: hidden;                  /* scroll driven by JS, no own scrollbar */
+  overflow-x: hidden;
+  height: var(--editor-height);        /* clip to match the editor stack exactly */
+}
+
+/* Each line number row matches the textarea's line-height exactly */
+.gutter .line {
+  height: 22px;
+  line-height: 22px;
+}
+
+/* Push the first line down by the textarea's top padding (10px) so
+   line 1 aligns with the first character row */
+.gutter .line:first-child {
+  margin-top: 10px;
+}
+
+/* ── Active (current) line in the gutter ────────────────────────────────── */
+/* JS applies .active-line to whichever line number matches the cursor row.  */
+.gutter .line.active-line {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ─── Editor stack ───────────────────────────────────────────────────────────
+   Fixed-height container holding two pixel-perfect layers:
+     1. .highlight-overlay — colored HTML div, pointer-events: none
+     2. .code (textarea)   — transparent text, handles all input & scrolling
+   JS keeps the overlay's scrollTop/Left in sync with the textarea on scroll.  */
+
+.editor-stack {
+  position: relative;
+  height:   var(--editor-height);
+  overflow: hidden;
+}
+
+/* Both layers share identical font metrics so colors align with typed text */
+.highlight-overlay,
+.code {
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco,
+    Consolas, "Liberation Mono", monospace;
+  font-size:   13.5px;
+  line-height: 22px;
+  padding:     10px 14px;
+  white-space: pre;
+  word-wrap:   normal;
+  tab-size:    2;
+  box-sizing:  border-box;
+  width:       100%;
+  height:      100%;
+}
+
+.highlight-overlay {
+  position:       absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  background:     var(--code-bg);
+  color:          var(--text);
+  border:         none;
+  overflow:       hidden;
+  z-index:        1;
+}
+
+.code {
+  position:    relative;
+  z-index:     2;
+  background:  transparent;
+  color:       transparent;
+  caret-color: var(--btn);
+  border:      none;
+  outline:     none;
+  resize:      none;
+  overflow-y:  auto;
+  overflow-x:  auto;
+}
+
+/* ─── Syntax highlight colors ────────────────────────────────────────────── */
+.syn-fn    { color: #16a34a; font-weight: 500; }
+.syn-ident { color: var(--text); }
+.syn-num   { color: #b45309; }
+.syn-str   { color: #0369a1; }
+.syn-op    { color: #7c3aed; }
+.syn-punc  { color: var(--text-3); }
+
+:root[data-theme="dark"] .syn-fn   { color: #22c55e; }
+:root[data-theme="dark"] .syn-num  { color: #f59e0b; }
+:root[data-theme="dark"] .syn-str  { color: #38bdf8; }
+:root[data-theme="dark"] .syn-op   { color: #a78bfa; }
+:root[data-theme="dark"] .syn-punc { color: var(--text-3); }
+
+/* ─── Error bar ──────────────────────────────────────────────────────────── */
+.error-bar {
+  margin-top:    8px;
+  padding:       8px 12px;
+  border-radius: 7px;
+  background:    #fef2f2;
+  border:        1px solid #fca5a5;
+  color:         #b91c1c;
+  font-family:   "JetBrains Mono", ui-monospace, monospace;
+  font-size:     12.5px;
+  line-height:   1.5;
+  animation:     errorSlideIn 0.18s ease-out;
+}
+
+:root[data-theme="dark"] .error-bar {
+  background:   #1c0a0a;
+  border-color: #7f1d1d;
+  color:        #fca5a5;
+}
+
+@keyframes errorSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ─── Status bar ─────────────────────────────────────────────────────────── */
+/* Sits between the editor border and the action buttons.                    */
+/* Shows cursor position, character count, line count, language, encoding.  */
+.status-bar {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  height:          var(--status-bar-height);
+  margin-top:      6px;
+  padding:         0 6px;
+  border-radius:   6px;
+  background:      var(--gutter-bg);
+  border:          1px solid var(--border);
+  font-family:     "JetBrains Mono", ui-monospace, monospace;
+  font-size:       11px;
+  color:           var(--text-3);
+  user-select:     none;
+  flex-shrink:     0;
+}
+
+.status-left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Small pill badge for the language name */
+.status-pill {
+  background:    var(--border);
+  color:         var(--text-2);
+  border-radius: 4px;
+  padding:       1px 7px;
+  font-size:     10.5px;
+  font-weight:   600;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Action buttons ─────────────────────────────────────────────────────── */
+.actions {
+  display:     flex;
+  gap:         8px;
+  align-items: center;
+  margin-top:  10px;
+}
+
+.btn {
+  border:        1px solid transparent;
+  border-radius: 8px;
+  padding:       9px 16px;
+  font-weight:   600;
+  cursor:        pointer;
+  font-size:     13px;
+  display:       inline-flex;
+  align-items:   center;
+  gap:           8px;
+  transition:    background 0.12s, transform 0.08s;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn-primary { background: var(--btn); color: var(--btn-text); }
+.btn-primary:hover { background: var(--btn-hover); }
+
+.play { font-size: 12px; }
+
+.btn-secondary {
+  background:   var(--secondary-btn);
+  color:        var(--secondary-btn-text);
+  border-color: var(--border);
+  display:      inline-flex;
+  align-items:  center;
+}
+.btn-secondary:hover { background: var(--secondary-btn-hover); }
+
+/* ── Unsaved label in the action row ─────────────────────────────────────── */
+/* Pushed to the right via margin-left:auto. Amber color matches the dot.   */
+.unsaved-label {
+  margin-left: auto;
+  font-size:   11.5px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color:       #b45309;
+  font-weight: 600;
+  animation:   unsavedFadeIn 0.2s ease-out;
+}
+
+:root[data-theme="dark"] .unsaved-label { color: #f59e0b; }
+
+@keyframes unsavedFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Run button animation ────────────────────────────────────────────────── */
+.btn-primary.is-running {
+  opacity: 0.8;
+  cursor:  not-allowed;
+}
+.btn-primary.is-running .play {
+  display:          inline-block;
+  animation:        spin 0.6s linear infinite;
+  transform-origin: center;
+}
+@keyframes spin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Output card ────────────────────────────────────────────────────────── */
+.output-card { /* inherits display:flex flex-direction:column from .card */ }
+
+.tabs {
+  display:       flex;
+  gap:           2px;
+  padding:       8px 8px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink:   0;
+}
+
+.tab {
+  background:    transparent;
+  border:        1px solid transparent;
+  border-bottom: none;
+  color:         var(--text-3);
+  padding:       7px 12px;
+  border-radius: 7px 7px 0 0;
+  font-weight:   600;
+  font-size:     12.5px;
+  cursor:        pointer;
+  transition:    color 0.12s, background 0.12s;
+}
+.tab:hover { color: var(--text-2); }
+
+.tab.is-active {
+  background:             var(--tab-active-bg);
+  color:                  var(--text);
+  border-color:           var(--tab-active-border);
+  border-bottom-color:    var(--tab-active-bg);
+  margin-bottom:          -1px;
+}
+
+/*
+  Output area — sized to match the editor card height exactly:
+
+    Editor card  = 12px pad-top
+                 + 1px border (editor top)
+                 + 310px editor-stack   ← var(--editor-height)
+                 + 1px border (editor bottom)
+                 + 6px status bar margin
+                 + 28px status bar       ← var(--status-bar-height)
+                 + 10px actions margin
+                 + 33px button
+                 + 12px pad-bottom
+                 ≈ 413px
+
+    Output card  = 42px tabs (incl border)
+                 + 12px pad + 359px content + 12px pad
+                 = 425px — close enough; flex-stretch handles the rest
+*/
+.output {
+  padding:    12px 14px;
+  min-height: 359px;
+  max-height: 359px;
+  overflow-y: auto;
+  background: var(--surface);
+  flex:       1;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-size:  13px;
+  line-height: 1.6;
+  color:      var(--text);
+}
+
+/* ─── Colorized output rows ──────────────────────────────────────────────── */
+/* Each run result is written as a series of .out-row divs by JS rather      */
+/* than a plain text dump, giving us per-row coloring and timestamps.        */
+
+/* Wrapper for a single output row: timestamp + prefix glyph + message */
+.out-row {
+  display:     flex;
+  align-items: baseline;
+  gap:         8px;
+  min-height:  1.6em;
+}
+
+/* Muted timestamp on the left — hh:mm:ss */
+.out-ts {
+  font-size:   10.5px;
+  color:       var(--text-3);
+  min-width:   54px;
+  flex-shrink: 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  user-select: none;
+}
+
+/* Green ">" prefix for normal output lines */
+.out-prefix-ok {
+  color:       var(--output-green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Red "✕" prefix for error lines */
+.out-prefix-err {
+  color:       #dc2626;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .out-prefix-err { color: #f87171; }
+
+/* The actual message text */
+.out-msg-ok  { color: var(--text); }
+.out-msg-err { color: #dc2626; }
+
+:root[data-theme="dark"] .out-msg-err { color: #f87171; }
+
+/* Muted italic message when there's genuinely no output */
+.out-empty {
+  color:       var(--text-3);
+  font-style:  italic;
+  font-size:   12.5px;
+  padding-top: 2px;
+}
+
+/* ── Typewriter blinking cursor ──────────────────────────────────────────── */
+/* Appended to #outBox while the typewriter animation is in progress.        */
+#outBox.typewriter-active::after {
+  content:   "█";
+  animation: blink 0.8s step-end infinite;
+  color:     var(--output-green);
+  font-size: 0.9em;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ─── Canvas pane ────────────────────────────────────────────────────────── */
+.canvas-pane {
+  margin:     -12px -14px;
+  height:     calc(359px + 24px);
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  background: #060b14;
+  line-height: 0;
+}
+.canvas-pane canvas {
   display: block;
-  width: 100%;
-  height: auto;
-  background:
-    radial-gradient(circle at center, #13203a 0%, #0b1220 70%, #060b14 100%);
+  width:   100%;
+  height:  auto;
+}
+
+/* ─── Toast notifications ────────────────────────────────────────────────── */
+/* Toasts stack in the top-right corner of the viewport and auto-dismiss.   */
+
+.toast-container {
+  position:       fixed;
+  top:            20px;
+  right:          20px;
+  z-index:        9999;
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  pointer-events: none;  /* container itself never blocks clicks */
+}
+
+/* Individual toast card */
+.toast {
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-left:   3px solid var(--btn); /* accent color matches theme */
+  border-radius: 9px;
+  padding:       10px 14px;
+  font-size:     13px;
+  color:         var(--text);
+  box-shadow:    var(--shadow);
+  pointer-events: all;
+  min-width:     240px;
+  max-width:     340px;
+
+  /* Slide in from the right */
+  animation: toastIn 0.22s ease-out forwards;
+}
+
+/* Error variant — red left border */
+.toast.toast-error {
+  border-left-color: #dc2626;
+}
+:root[data-theme="dark"] .toast.toast-error { border-left-color: #f87171; }
+
+/* Icon inside the toast */
+.toast-icon {
+  font-size:   15px;
+  flex-shrink: 0;
+  color:       var(--btn);
+}
+.toast.toast-error .toast-icon { color: #dc2626; }
+:root[data-theme="dark"] .toast.toast-error .toast-icon { color: #f87171; }
+
+/* Dismiss × button */
+.toast-dismiss {
+  margin-left:  auto;
+  font-size:    13px;
+  color:        var(--text-3);
+  background:   none;
+  border:       none;
+  cursor:       pointer;
+  flex-shrink:  0;
+  padding:      0 2px;
+  line-height:  1;
+}
+.toast-dismiss:hover { color: var(--text); }
+
+/* Slide-in keyframe */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+/* Slide-out class added by JS just before the element is removed */
+.toast.toast-out {
+  animation: toastOut 0.2s ease-in forwards;
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0);    }
+  to   { opacity: 0; transform: translateX(16px); }
+}
+
+/* ─── Utility ────────────────────────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+.out-green {
+  color:       var(--output-green);
+  font-weight: 600;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────────────────── */
+.output::-webkit-scrollbar,
+.code::-webkit-scrollbar   { width: 6px; height: 6px; }
+
+.output::-webkit-scrollbar-track,
+.code::-webkit-scrollbar-track { background: transparent; }
+
+.output::-webkit-scrollbar-thumb,
+.code::-webkit-scrollbar-thumb {
+  background:    var(--border-strong);
+  border-radius: 3px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .grid        { grid-template-columns: 1fr; }
+  .select-wrap { width: 100%; }
+  .header      { flex-direction: column; gap: 12px; align-items: flex-start; }
 }
