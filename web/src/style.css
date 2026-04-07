@@ -268,6 +268,9 @@ body {
   border: none; overflow: hidden; z-index: 1;
 }
 
+/* Reset hljs wrapper so plain text inherits the theme color instead of hljs gray. */
+.highlight-overlay .hljs { color: inherit; background: transparent; }
+
 /* Scoped hljs token colors — no CDN stylesheet, no global bleed */
 .highlight-overlay .hljs-keyword,
 .highlight-overlay .hljs-operator        { color: #7c3aed; }
