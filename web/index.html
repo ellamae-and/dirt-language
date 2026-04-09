@@ -7,99 +7,123 @@
   </head>
 
   <body>
+
     <div class="app">
-      <header class="header">
-        <div class="header-left">
-          <h1>Dirt Web IDE</h1>
-          <p>Simple interpreter for the Dirt programming language</p>
-        </div>
+      <div class="ide-box">
 
-        <div class="header-right">
-      <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
-            <span class="icon-text">Light</span>
-          </button> 
-        </div>
-      </header>
-
-      <main class="content">
-        <div class="topbar">
-          <div class="label">Projects:</div>
-        
-          <div class="select-wrap">
-            <select id="examples" class="select"></select>
-            <span class="chev" aria-hidden="true">▾</span>
+        <!--HEADER-->
+        <header class="header">
+          <div class="header-left">
+            <h1>
+              <svg class="hex-logo" aria-hidden="true"
+                   width="30" height="32" viewBox="0 0 30 32" fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+                <polygon class="hex-ring" points="15,2 27,9 27,23 15,30 3,23 3,9"/>
+                <polygon class="hex-fill" points="15,5 24,10.5 24,21.5 15,27 6,21.5 6,10.5"/>
+                <ellipse class="hex-dirt" cx="15" cy="27" rx="7" ry="2.5"/>
+                <path    class="hex-stem"   d="M15 26 L15 14" stroke-width="2" stroke-linecap="round"/>
+                <path    class="hex-leaf-l" d="M15 19 Q8 16 9 9 Q13 12 15 18"/>
+                <path    class="hex-leaf-r" d="M15 15 Q22 12 22 5 Q18 9 15 15"/>
+              </svg>
+              Dirt Web IDE
+            </h1>
+            <p>Simple interpreter for the Dirt programming language</p>
           </div>
-        
-          <button id="newBtn" class="btn btn-secondary" type="button">New</button>
-          <button id="saveBtn" class="btn btn-secondary" type="button">Save Project</button>
-          <button id="deleteBtn" class="btn btn-secondary" type="button">Delete</button>
-        </div>
 
-        <div class="grid">
-          <!------- Editor ------->
-          <section class="card editor-card">
-            <div class="editor">
-              <div class="gutter" aria-hidden="true">
+          <div class="header-right">
+            <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme">
+              <span class="icon-text">Light</span>
+            </button>
+          </div>
+        </header>
+
+        <!--MAIN CONTENT-->
+        <main class="content">
+
+          <div class="topbar">
+            <div class="label">Projects:</div>
+            <div class="select-wrap">
+              <select id="examples" class="select"></select>
+              <span class="chev" aria-hidden="true">▾</span>
+            </div>
+            <button id="newBtn"    class="btn btn-secondary" type="button">New</button>
+            <button id="saveBtn"   class="btn btn-secondary" type="button">
+              <span class="unsaved-dot" aria-hidden="true"></span>Save Project
+            </button>
+            <button id="deleteBtn" class="btn btn-secondary" type="button">Delete</button>
+          </div>
+
+          <div class="grid">
+
+            <!--EDITOR CARD-->
+            <section class="card editor-card">
+              <div class="editor">
+                <div class="gutter" aria-hidden="true"></div>
+                <div class="editor-stack">
+                  <div id="highlightOverlay" class="highlight-overlay" aria-hidden="true"></div>
+                  <textarea
+                    id="editor"
+                    class="code"
+                    spellcheck="false"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    aria-label="Code editor"
+                  ></textarea>
+                </div>
               </div>
 
-              <textarea
-                id="editor"
-                class="code"
-                spellcheck="false"
-                aria-label="Code editor"
-              ></textarea>
-            </div>
+              <div id="errorBar" class="error-bar is-hidden" aria-live="polite"></div>
 
-            <div class="actions">
-              <button id="runBtn" class="btn btn-primary" type="button">
-                <span class="play" aria-hidden="true">▶</span>
-                Run
-              </button>
-              <button id="clearBtn" class="btn btn-secondary" type="button">
-                Clear
-              </button>
-            </div>
-          </section>
+              <div class="status-bar" aria-label="Editor status">
+                <div class="status-left">
+                  <span id="statusCursor">Ln 1, Col 1</span>
+                  <span id="statusChars">0 chars</span>
+                  <span id="statusLines">0 lines</span>
+                </div>
+                <div class="status-right">
+                  <span class="status-pill">Dirt</span>
+                  <span>UTF-8</span>
+                </div>
+              </div>
 
-          <!------- Output of Program ------->
-          <section class="card output-card">
-            <div class="tabs">
-              <button class="tab is-active" data-tab="output" type="button">Output</button>
-              <button class="tab" data-tab="tokens" type="button">Tokens</button>
-              <button class="tab" data-tab="ast" type="button">AST</button>
-              <button class="tab" data-tab="env" type="button">Env</button>
-            </div>
+              <div class="actions">
+                <button id="runBtn"   class="btn btn-primary"   type="button">
+                  <span class="play" aria-hidden="true">▶</span>Run
+                </button>
+                <button id="clearBtn" class="btn btn-secondary" type="button">Clear</button>
+                <span id="unsavedLabel" class="unsaved-label is-hidden" aria-live="polite">● unsaved</span>
+              </div>
+            </section>
 
-            <div class="output">
-              <pre id="outBox" data-pane="output"></pre>
-              <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
-              <pre id="astBox" data-pane="ast" class="is-hidden"></pre>
-              <pre id="envBox" data-pane="env" class="is-hidden"></pre>
-            </div>
-          </section>
-          <section class="card game-card">
-            <div class="panel-header">
-              <h2>Game Canvas</h2>
-              <p>Plain TypeScript render test</p>
-            </div>
-          
-            <div class="game-wrap">
-              <canvas
-                id="gameCanvas"
-                class="game-canvas"
-                width="640"
-                height="360"
-                aria-label="Game canvas"
-              ></canvas>
-            </div>
-          </section>
-        </div>
-      </main>
+            <!--OUTPUT CARD-->
+            <section class="card output-card">
+              <div class="tabs">
+                <button class="tab is-active" data-tab="output" type="button">Output</button>
+                <button class="tab"           data-tab="canvas" type="button">Canvas</button>
+                <button class="tab"           data-tab="tokens" type="button">Tokens</button>
+                <button class="tab"           data-tab="ast"    type="button">AST</button>
+                <button class="tab"           data-tab="env"    type="button">Env</button>
+              </div>
+              <div class="output">
+                <pre id="outBox" data-pane="output"></pre>
+                <pre id="tokBox" data-pane="tokens" class="is-hidden"></pre>
+                <pre id="astBox" data-pane="ast"    class="is-hidden"></pre>
+                <pre id="envBox" data-pane="env"    class="is-hidden"></pre>
+                <div id="canvasPane" data-pane="canvas" class="canvas-pane is-hidden">
+                  <canvas id="gameCanvas" width="640" height="360" aria-label="Game canvas"></canvas>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        </main>
+      </div>
     </div>
 
-    
+    <!--Toastify -->
 
-    <!------- Dirt Program Entry ------->
+    <canvas id="sporeBg" aria-hidden="true"></canvas>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

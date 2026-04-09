@@ -24,6 +24,14 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^25.3.0",
+    "@types/toastify-js": "^1.12.4",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@tsparticles/engine": "^3.9.1",
+    "@tsparticles/slim": "^3.9.1",
+    "highlight.js": "^11.11.1",
+    "simplex-noise": "^4.0.3",
+    "toastify-js": "^1.12.0"
   }
 }
