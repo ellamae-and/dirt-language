@@ -404,8 +404,6 @@ function syncGutter() {
 // ─── SYNTAX HIGHLIGHTING ──────────────────────────────────────────────────────
 
 // Rebuild the colored overlay from the current editor content using highlight.js.
-// The textarea text is color:transparent — this overlay is what the user sees.
-// Trailing \n keeps overlay height equal to the textarea when content ends with a newline.
 function syncHighlight() {
   highlightOverlay.innerHTML  = hljs.highlight(editor.value, { language: "javascript" }).value + "\n";
   highlightOverlay.scrollTop  = editor.scrollTop;
@@ -517,7 +515,8 @@ function findErrorOffset(source: string, errorMsg: string): number | null {
       if (t?.index !== undefined) return t.index;
     }
     if (tokens.length >= 2) return tokens[tokens.length - 2].index ?? null;
-  } catch { /* if lexing itself fails, we have no offset to report */ }
+  } catch { 
+   }
   return null;
 }
 
@@ -689,11 +688,6 @@ function run() {
 // ─── PROJECT MANAGEMENT ───────────────────────────────────────────────────────
 
 // Reflect the active program name in the browser tab title.
-// NOTE: The HTML has no dedicated label element for this — the dropdown already
-// shows the selected name, so document.title is the right place for it.
-// The old code referenced ".chip" which does not exist and caused a TypeError
-// that silently killed loadProgramIntoEditor before syncHighlight() could run,
-// making the editor appear blank after every project switch.
 function setEditorLabel(name: string) {
   document.title = `${name} — Dirt Web IDE`;
 }
@@ -733,16 +727,13 @@ async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
   setEditorLabel(program.name);
   markAsSaved(program.code);
 
-  // Rebuild the overlay, gutter, and status bar SYNCHRONOUSLY here.
-  // The textarea text is color:transparent — the overlay is the only thing
-  // the user sees. Deferring this into a requestAnimationFrame causes the
-  // editor to appear blank for at least one full frame (~16 ms) on every
-  // project switch, which was the original visible bug.
+  // Rebuild the overlay, gutter, and status bar here.
+  // The textarea text is color:transparent, the overlay is the only thing
+  // the user sees. 
   syncHighlight();
   syncGutter();
   updateStatusBar();
 
-  // One rAF later, nudge scroll sync — the browser needs one layout pass
   // before scrollTop/scrollLeft values are stable for the new content.
   requestAnimationFrame(() => {
     highlightOverlay.scrollTop  = editor.scrollTop;
@@ -868,11 +859,9 @@ deleteBtn.addEventListener("click", async () => {
 });
 
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-
 (async function init() {
   try {
-    // Load the default program — this sets editor.value and runs syncHighlight()
+    // Load the default program, this sets editor.value and runs syncHighlight()
     // synchronously, so the overlay is populated before the first paint.
     await initializePrograms();
   } catch (e) {
@@ -880,14 +869,11 @@ deleteBtn.addEventListener("click", async () => {
   }
 
   // Clear the output pane and show the Output tab as the default view.
-  // Do NOT call syncHighlight() here — initializePrograms already did it
-  // with the correct editor.value. Calling it again after renderEmpty()
-  // would overwrite a now-stale value and blank the overlay.
   renderEmpty();
   setActiveTab("output");
 })();
 
-// Start the background animation immediately — don't wait for programs to load.
+// Start the background animation immediately
 resizeSpores();
 sporeLastTs = performance.now();
 requestAnimationFrame(drawSpores);
