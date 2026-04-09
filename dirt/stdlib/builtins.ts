@@ -171,7 +171,7 @@ export function registerBuiltins(env: Environment, config: DirtConfig) {
   // keyDown(key) — returns true if the given key is currently held down.
   // Key names match the browser's KeyboardEvent.key values:
   //   "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " " (space), "a", "Enter", etc.
-  // Returns false silently if no input API is available (e.g. in the CLI runner).
+  // Returns false silently if no input API is available .
   env.define("keyDown", (key: unknown) => {
     if (!config.input) return false;
     return config.input.keyDown(expectString(key, "keyDown"));

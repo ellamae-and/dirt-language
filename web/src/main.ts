@@ -13,8 +13,7 @@ import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
 // highlight.js — used for syntax highlighting in the editor overlay.
-// We import only the JavaScript grammar (close enough for Dirt: same keywords,
-// strings, numbers, and comments) to keep the bundle small.
+//  import only the JavaScript grammar.
 import hljs from "highlight.js/lib/core";
 import javascript from "highlight.js/lib/languages/javascript";
 hljs.registerLanguage("javascript", javascript);
@@ -35,7 +34,7 @@ const themeToggle = document.querySelector<HTMLButtonElement>("#themeToggle")!;
 const iconText    = themeToggle.querySelector<HTMLElement>(".icon-text")!;
 
 // Apply a theme by setting/removing the data-theme attribute on <html>.
-// The button label flips to show the CURRENT mode (not what clicking will do).
+// The button label flips to show the current mode .
 function setTheme(mode: "light" | "dark") {
   const dark = mode === "dark";
   if (dark) root.setAttribute("data-theme", "dark");
@@ -134,7 +133,6 @@ function spawnCloud(offscreenRight = false): Cloud {
 }
 
 function initScene() {
-  // Scatter initial spores across the full canvas height so the screen
   // doesn't start empty — new spores normally spawn from the bottom.
   spores = Array.from({ length: SPORE_COUNT }, () => {
     const s = spawnSpore();
@@ -171,7 +169,7 @@ function drawSpores(ts: number) {
 
   sporeCtx.clearRect(0, 0, w, h);
 
-  // Sky gradient — fades to transparent so the CSS background shows through below.
+  // Sky gradient, fades to transparent so the CSS background shows through below.
   const skyGrad = sporeCtx.createLinearGradient(0, 0, 0, h * 0.62);
   skyGrad.addColorStop(0,    isDark ? "rgba(5,12,30,0.92)"  : "rgba(184,216,240,0.88)");
   skyGrad.addColorStop(0.45, isDark ? "rgba(10,22,40,0.60)" : "rgba(218,237,248,0.55)");
@@ -179,7 +177,7 @@ function drawSpores(ts: number) {
   sporeCtx.fillStyle = skyGrad;
   sporeCtx.fillRect(0, 0, w, h * 0.62);
 
-  // Stars — twinkle via a sine-driven alpha.
+  // Stars, twinkle via a sine-driven alpha.
   for (const star of stars) {
     star.phase += star.speed * dt;
     const alpha = (0.4 + 0.6 * (0.5 + 0.5 * Math.sin(star.phase))) * sky.starOpMax
@@ -194,7 +192,7 @@ function drawSpores(ts: number) {
     sporeCtx.restore();
   }
 
-  // Clouds — drift left, respawn off the right edge when they leave the left.
+  // Clouds, drift left, respawn off the right edge when they leave the left.
   for (const cloud of clouds) {
     cloud.x -= cloud.vx * dt;
     if (cloud.x < -cloud.w - 60) Object.assign(cloud, spawnCloud(true));
@@ -202,7 +200,7 @@ function drawSpores(ts: number) {
     if (alpha < 0.02) continue;
     sporeCtx.save();
     sporeCtx.globalAlpha = alpha;
-    // Shadow pass first, then bright pass on top for a soft 3-D look.
+    // Shadow pass first, then bright pass on top.
     for (const puff of cloud.puffs) {
       sporeCtx.fillStyle = sky.cloudShadow;
       sporeCtx.beginPath();
@@ -218,7 +216,7 @@ function drawSpores(ts: number) {
     sporeCtx.restore();
   }
 
-  // Soil layers — three overlapping bezier blobs give the horizon organic depth.
+  // Soil layers, three overlapping bezier blobs give the horizon organic depth.
   for (const [color, opacity, yOff] of [
     [soil.a, isDark ? 0.28 : 0.20,  22],
     [soil.b, isDark ? 0.20 : 0.14,   0],
@@ -241,7 +239,7 @@ function drawSpores(ts: number) {
     sporeCtx.restore();
   }
 
-  // Floating spores — rise upward with a sinusoidal horizontal sway.
+  // Floating spores, rise upward with a sinusoidal horizontal sway.
   const sporeGreen = isDark ? "#22c55e" : "#16a34a";
   const sporeAmber = isDark ? "#f59e0b" : "#b45309";
   for (let i = 0; i < spores.length; i++) {
