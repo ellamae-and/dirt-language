@@ -83,8 +83,7 @@ const bgCtx        = bgCanvas.getContext("2d")!;
 // ─── CODEMIRROR 6 EDITOR ──────────────────────────────────────────────────────
 
 // ── Syntax highlight styles ──────────────────────────────────────────────────
-// CM6 injects HighlightStyle rules into its own <style> tag — the only reliable
-// way to control token colors. We define one for light and one for dark, then
+// CM6 injects HighlightStyle rules into its own <style> tag. one for light and one for dark, then
 // swap them via a Compartment whenever the user toggles the theme.
 
 const lightHighlight = HighlightStyle.define([
@@ -116,9 +115,8 @@ const darkHighlight = HighlightStyle.define([
 const highlightCompartment = new Compartment();
 
 // ── Editor theme (layout/colors, not syntax) ─────────────────────────────────
-// EditorView.theme() uses literal values — CSS variables don't resolve inside
-// CM6's injected <style> blocks, so we read them once at startup via getComputedStyle.
-// The theme is split into light/dark variants applied the same way as highlights.
+// EditorView.theme() uses literal values. CSS variables don't resolve inside
+// CM6's injected <style> blocks,
 
 const lightTheme = EditorView.theme({
   "&":                  { height: "310px", fontSize: "13.5px", background: "#f4f5f7" },
@@ -150,7 +148,7 @@ const darkTheme = EditorView.theme({
 const themeCompartment = new Compartment();
 
 // ── Update listener ───────────────────────────────────────────────────────────
-// Fires on every document change or cursor movement — replaces the three
+// Fires on every document change or cursor movement. replaces the three
 // separate textarea event listeners the old code needed.
 const updateListener = EditorView.updateListener.of(update => {
   if (update.docChanged || update.selectionSet) {
@@ -178,7 +176,7 @@ const cmState = EditorState.create({
 });
 
 // cmView is declared with `let` because setTheme() references it before the
-// EditorView constructor runs — the reference is safe because setTheme is only
+// EditorView constructor runs. the reference is safe because setTheme is only
 // called after cmView is assigned (the initial setTheme call at the top uses
 // optional chaining: cmView?.dispatch).
 let cmView: EditorView;

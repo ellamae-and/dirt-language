@@ -59,9 +59,8 @@
             <section class="card editor-card">
 
               <!--
-                #editor is now a plain div — CodeMirror 6 injects its own DOM tree
-                into it at runtime. The old textarea, highlight overlay, and gutter
-                divs are gone; CM6 provides all of that natively.
+                CodeMirror 6 injects its own DOM tree
+                into it at runtime. 
               -->
               <div id="editor" class="editor" aria-label="Code editor"></div>
 
@@ -116,7 +115,7 @@
     <!-- Sky/stars/soil canvas — drawn by main.ts -->
     <canvas id="sporeBg" aria-hidden="true"></canvas>
 
-    <!-- CSS-animated SVG clouds — drift left endlessly via @keyframes cloudDrift -->
+    <!-- CSS-animated SVG clouds. drift left endlessly via @keyframes cloudDrift -->
     <svg class="bg-cloud" aria-hidden="true"
          style="top:6vh; width:260px; animation-duration:110s; animation-delay:0s"
          viewBox="0 0 260 90" xmlns="http://www.w3.org/2000/svg">
