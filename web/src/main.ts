@@ -2,8 +2,8 @@
 //
 // Entry point for the browser-based IDE. Handles:
 //   - Theme toggling (light / dark)
-//   - Background spore/sky animation
-//   - Code editor with syntax highlighting overlay and line gutter
+//   - Background sky/stars/soil canvas animation
+//   - CodeMirror 6 code editor with syntax highlighting and line numbers
 //   - Running Dirt programs and displaying output / tokens / AST / env
 //   - Canvas game loop for graphical Dirt programs
 //   - Project management (load, save, delete) via the backend API
@@ -12,11 +12,15 @@ import "./style.css";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
-// highlight.js — used for syntax highlighting in the editor overlay.
-//  import only the JavaScript grammar.
-import hljs from "highlight.js/lib/core";
-import javascript from "highlight.js/lib/languages/javascript";
-hljs.registerLanguage("javascript", javascript);
+// CodeMirror 6 core
+import { EditorView, keymap, lineNumbers, drawSelection }   from "@codemirror/view";
+import { EditorState, Compartment }                          from "@codemirror/state";
+import { defaultKeymap, history, historyKeymap }             from "@codemirror/commands";
+import { javascript }                                        from "@codemirror/lang-javascript";
+// HighlightStyle lets us define explicit token colors that CM6 injects into its
+// own <style> tag — the only reliable way to control syntax colors in CM6.
+import { syntaxHighlighting, HighlightStyle }                from "@codemirror/language";
+import { tags }                                              from "@lezer/highlight";
 
 import { runProgramDebug }   from "../../dirt/runtime/runProgram";
 import type { DirtCallable } from "../../dirt/runtime/runProgram";
@@ -33,16 +37,15 @@ const root        = document.documentElement;
 const themeToggle = document.querySelector<HTMLButtonElement>("#themeToggle")!;
 const iconText    = themeToggle.querySelector<HTMLElement>(".icon-text")!;
 
-// Apply a theme by setting/removing the data-theme attribute on <html>.
-// The button label flips to show the current mode .
 function setTheme(mode: "light" | "dark") {
   const dark = mode === "dark";
   if (dark) root.setAttribute("data-theme", "dark");
   else      root.removeAttribute("data-theme");
   iconText.textContent = dark ? "Dark" : "Light";
+  // Swap the CM6 highlight style to match the new theme (defined below).
+  cmView?.dispatch({ effects: highlightCompartment.reconfigure(syntaxHighlighting(dark ? darkHighlight : lightHighlight)) });
 }
 
-// Restore the last saved theme, falling back to the OS preference.
 const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
 setTheme(savedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
@@ -55,213 +58,246 @@ themeToggle.addEventListener("click", () => {
 
 // ─── DOM REFS ─────────────────────────────────────────────────────────────────
 
-const editor           = document.querySelector<HTMLTextAreaElement>("#editor")!;
-const examples         = document.querySelector<HTMLSelectElement>("#examples")!;
-const runBtn           = document.querySelector<HTMLButtonElement>("#runBtn")!;
-const clearBtn         = document.querySelector<HTMLButtonElement>("#clearBtn")!;
-const saveBtn          = document.querySelector<HTMLButtonElement>("#saveBtn")!;
-const newBtn           = document.querySelector<HTMLButtonElement>("#newBtn")!;
-const deleteBtn        = document.querySelector<HTMLButtonElement>("#deleteBtn")!;
-const outBox           = document.querySelector<HTMLPreElement>("#outBox")!;
-const tokBox           = document.querySelector<HTMLPreElement>("#tokBox")!;
-const astBox           = document.querySelector<HTMLPreElement>("#astBox")!;
-const envBox           = document.querySelector<HTMLPreElement>("#envBox")!;
-const errorBar         = document.querySelector<HTMLElement>("#errorBar")!;
-const highlightOverlay = document.querySelector<HTMLElement>("#highlightOverlay")!;
-const statusCursor     = document.querySelector<HTMLSpanElement>("#statusCursor")!;
-const statusChars      = document.querySelector<HTMLSpanElement>("#statusChars")!;
-const statusLines      = document.querySelector<HTMLSpanElement>("#statusLines")!;
-const unsavedLabel     = document.querySelector<HTMLSpanElement>("#unsavedLabel")!;
-const tabs             = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
-const panes            = Array.from(document.querySelectorAll<HTMLElement>("[data-pane]"));
-const gutter           = document.querySelector<HTMLDivElement>(".gutter")!;
-const sporeCanvas      = document.querySelector<HTMLCanvasElement>("#sporeBg")!;
-const sporeCtx         = sporeCanvas.getContext("2d")!;
+const editorMount  = document.querySelector<HTMLDivElement>("#editor")!;
+const examples     = document.querySelector<HTMLSelectElement>("#examples")!;
+const runBtn       = document.querySelector<HTMLButtonElement>("#runBtn")!;
+const clearBtn     = document.querySelector<HTMLButtonElement>("#clearBtn")!;
+const saveBtn      = document.querySelector<HTMLButtonElement>("#saveBtn")!;
+const newBtn       = document.querySelector<HTMLButtonElement>("#newBtn")!;
+const deleteBtn    = document.querySelector<HTMLButtonElement>("#deleteBtn")!;
+const outBox       = document.querySelector<HTMLPreElement>("#outBox")!;
+const tokBox       = document.querySelector<HTMLPreElement>("#tokBox")!;
+const astBox       = document.querySelector<HTMLPreElement>("#astBox")!;
+const envBox       = document.querySelector<HTMLPreElement>("#envBox")!;
+const errorBar     = document.querySelector<HTMLElement>("#errorBar")!;
+const statusCursor = document.querySelector<HTMLSpanElement>("#statusCursor")!;
+const statusChars  = document.querySelector<HTMLSpanElement>("#statusChars")!;
+const statusLines  = document.querySelector<HTMLSpanElement>("#statusLines")!;
+const unsavedLabel = document.querySelector<HTMLSpanElement>("#unsavedLabel")!;
+const tabs         = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
+const panes        = Array.from(document.querySelectorAll<HTMLElement>("[data-pane]"));
+const bgCanvas     = document.querySelector<HTMLCanvasElement>("#sporeBg")!;
+const bgCtx        = bgCanvas.getContext("2d")!;
+
+
+// ─── CODEMIRROR 6 EDITOR ──────────────────────────────────────────────────────
+
+// ── Syntax highlight styles ──────────────────────────────────────────────────
+// CM6 injects HighlightStyle rules into its own <style> tag. one for light and one for dark, then
+// swap them via a Compartment whenever the user toggles the theme.
+
+const lightHighlight = HighlightStyle.define([
+  { tag: [tags.keyword, tags.operator],              color: "#7c3aed" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
+                                                     color: "#16a34a", fontWeight: "500" },
+  { tag: tags.number,                                color: "#b45309" },
+  { tag: [tags.string, tags.special(tags.string)],   color: "#0369a1" },
+  { tag: tags.comment,                               color: "#8b92a0", fontStyle: "italic" },
+  { tag: tags.variableName,                          color: "#0f1117" },
+  { tag: tags.punctuation,                           color: "#8b92a0" },
+  { tag: tags.bool,                                  color: "#7c3aed" },
+]);
+
+const darkHighlight = HighlightStyle.define([
+  { tag: [tags.keyword, tags.operator],              color: "#a78bfa" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
+                                                     color: "#22c55e", fontWeight: "500" },
+  { tag: tags.number,                                color: "#f59e0b" },
+  { tag: [tags.string, tags.special(tags.string)],   color: "#38bdf8" },
+  { tag: tags.comment,                               color: "#4f647c", fontStyle: "italic" },
+  { tag: tags.variableName,                          color: "#e8ecf4" },
+  { tag: tags.punctuation,                           color: "#4f647c" },
+  { tag: tags.bool,                                  color: "#a78bfa" },
+]);
+
+// A Compartment lets us hot-swap the highlight style at runtime when the theme
+// changes, without rebuilding the entire editor state.
+const highlightCompartment = new Compartment();
+
+// ── Editor theme (layout/colors, not syntax) ─────────────────────────────────
+// EditorView.theme() uses literal values. CSS variables don't resolve inside
+// CM6's injected <style> blocks,
+
+const lightTheme = EditorView.theme({
+  "&":                  { height: "310px", fontSize: "13.5px", background: "#f4f5f7" },
+  ".cm-scroller":       { fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace", lineHeight: "22px", overflow: "auto" },
+  ".cm-content":        { padding: "10px 14px", caretColor: "#16a34a", color: "#0f1117" },
+  ".cm-gutters":        { background: "#eaecf0", borderRight: "1px solid #e2e5eb", color: "#8b92a0" },
+  ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px", minWidth: "32px", textAlign: "center", fontSize: "12px", fontWeight: "500" },
+  ".cm-activeLineGutter":  { color: "#0f1117 !important", fontWeight: "700", background: "transparent" },
+  ".cm-activeLine":        { background: "transparent" },
+  "&.cm-focused":          { outline: "none" },
+  ".cm-selectionBackground, ::selection": { background: "rgba(22,163,74,0.18) !important" },
+  ".cm-cursor":            { borderLeftColor: "#16a34a" },
+}, { dark: false });
+
+const darkTheme = EditorView.theme({
+  "&":                  { height: "310px", fontSize: "13.5px", background: "#090e1a" },
+  ".cm-scroller":       { fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace", lineHeight: "22px", overflow: "auto" },
+  ".cm-content":        { padding: "10px 14px", caretColor: "#16a34a", color: "#e8ecf4" },
+  ".cm-gutters":        { background: "#080c18", borderRight: "1px solid #1e2d45", color: "#4f647c" },
+  ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px", minWidth: "32px", textAlign: "center", fontSize: "12px", fontWeight: "500" },
+  ".cm-activeLineGutter":  { color: "#e8ecf4 !important", fontWeight: "700", background: "transparent" },
+  ".cm-activeLine":        { background: "transparent" },
+  "&.cm-focused":          { outline: "none" },
+  ".cm-selectionBackground, ::selection": { background: "rgba(22,163,74,0.22) !important" },
+  ".cm-cursor":            { borderLeftColor: "#22c55e" },
+}, { dark: true });
+
+// Another Compartment for the base theme so it can be swapped on toggle too.
+const themeCompartment = new Compartment();
+
+// ── Update listener ───────────────────────────────────────────────────────────
+// Fires on every document change or cursor movement. replaces the three
+// separate textarea event listeners the old code needed.
+const updateListener = EditorView.updateListener.of(update => {
+  if (update.docChanged || update.selectionSet) {
+    updateStatusBar();
+    if (update.docChanged) updateUnsavedState();
+  }
+});
+
+// ── Initial theme detection ───────────────────────────────────────────────────
+const isDarkOnLoad = (localStorage.getItem("theme") ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+
+// ── Build editor ──────────────────────────────────────────────────────────────
+const cmState = EditorState.create({
+  doc: "",
+  extensions: [
+    lineNumbers(),
+    drawSelection(),
+    history(),
+    javascript(),
+    keymap.of([...defaultKeymap, ...historyKeymap]),
+    themeCompartment.of(isDarkOnLoad ? darkTheme : lightTheme),
+    highlightCompartment.of(syntaxHighlighting(isDarkOnLoad ? darkHighlight : lightHighlight)),
+    updateListener,
+  ],
+});
+
+// cmView is declared with `let` because setTheme() references it before the
+// EditorView constructor runs. the reference is safe because setTheme is only
+// called after cmView is assigned (the initial setTheme call at the top uses
+// optional chaining: cmView?.dispatch).
+let cmView: EditorView;
+cmView = new EditorView({ state: cmState, parent: editorMount });
+
+// Also update the base theme compartment when the theme button is clicked.
+// We patch setTheme here after cmView exists.
+const _origSetTheme = setTheme;
+// Override to also swap the base editor theme, not just the highlight style.
+// (The highlight swap is already inside setTheme via cmView?.dispatch above.)
+themeToggle.addEventListener("click", () => {
+  const dark = root.getAttribute("data-theme") === "dark";
+  cmView.dispatch({ effects: themeCompartment.reconfigure(dark ? darkTheme : lightTheme) });
+});
+
+// Read the current source text from the CM6 document.
+const getCode = () => cmView.state.doc.toString();
+
+// Replace the entire document content in a single CM6 transaction.
+function setCode(code: string) {
+  cmView.dispatch({
+    changes: { from: 0, to: cmView.state.doc.length, insert: code },
+  });
+}
 
 
 // ─── BACKGROUND SCENE ─────────────────────────────────────────────────────────
 
-const SPORE_COUNT = 18, SPORE_MIN_R = 1.5, SPORE_MAX_R = 3.8;
-const SPEED_MIN = 0.012, SPEED_MAX = 0.032, DRIFT_MAX = 0.008;
-const OPACITY_MIN = 0.12, OPACITY_MAX = 0.42, SWAY_SPEED = 0.0004, HORIZON_H = 0.92;
-const STAR_COUNT = 38, CLOUD_COUNT = 6;
+type Star = { x: number; y: number; r: number; phase: number; speed: number };
 
 const SKY = {
-  light: { top: "#b8d8f0", mid: "#daedf8", cloud: "#ffffff", cloudShadow: "#d4e8f5", star: "#4a90c4", starOpMax: 0.18 },
-  dark:  { top: "#050c1e", mid: "#0a1628", cloud: "#1e2d45", cloudShadow: "#0d1424", star: "#e8ecf4", starOpMax: 0.85 },
+  light: { star: "#4a90c4", starOpMax: 0.18 },
+  dark:  { star: "#e8ecf4", starOpMax: 0.85 },
 };
 const SOIL = {
   light: { a: "#5a7a42", b: "#4a6835", c: "#3a5428" },
   dark:  { a: "#3a5428", b: "#2d4420", c: "#1e3018" },
 };
 
-type Spore = { x: number; y: number; r: number; vy: number; sway: number; swayAmp: number; opacity: number; isAmber: boolean; fadeIn: number; fadeOut: number };
-type Star  = { x: number; y: number; r: number; phase: number; speed: number };
-type Cloud = { x: number; y: number; w: number; h: number; vx: number; opacity: number; puffs: { ox: number; oy: number; r: number }[] };
+const STAR_COUNT = 38;
+const HORIZON_H  = 0.92;
 
-let spores: Spore[] = [], stars: Star[] = [], clouds: Cloud[] = [], sporeLastTs = 0;
+let stars: Star[] = [];
+let bgLastTs      = 0;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-function spawnSpore(): Spore {
-  return {
-    x: rand(0, sporeCanvas.width), y: sporeCanvas.height + rand(0, 60),
-    r: rand(SPORE_MIN_R, SPORE_MAX_R), vy: rand(SPEED_MIN, SPEED_MAX),
-    sway: rand(0, Math.PI * 2), swayAmp: rand(0.003, DRIFT_MAX),
-    opacity: rand(OPACITY_MIN, OPACITY_MAX), isAmber: Math.random() < 0.18,
-    fadeIn: 0, fadeOut: 1,
-  };
-}
-
 function spawnStar(): Star {
   return {
-    x: rand(0, sporeCanvas.width), y: rand(0, sporeCanvas.height * 0.55),
+    x: rand(0, bgCanvas.width), y: rand(0, bgCanvas.height * 0.55),
     r: rand(0.6, 1.8), phase: rand(0, Math.PI * 2), speed: rand(0.0005, 0.0015),
   };
 }
 
-function spawnCloud(offscreenRight = false): Cloud {
-  const w = rand(120, 280), h = rand(30, 65), puffCount = Math.floor(rand(4, 8));
-  const puffs = Array.from({ length: puffCount }, () => ({
-    ox: rand(-w * 0.4, w * 0.4), oy: rand(-h * 0.2, h * 0.3), r: rand(h * 0.5, h * 0.9),
-  }));
-  return {
-    x: offscreenRight ? sporeCanvas.width + w + rand(0, 200) : rand(-w, sporeCanvas.width + w),
-    y: rand(sporeCanvas.height * 0.04, sporeCanvas.height * 0.34),
-    w, h, vx: rand(0.006, 0.016), opacity: rand(0.55, 0.85), puffs,
-  };
+function initBg() {
+  bgCanvas.width  = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+  stars = Array.from({ length: STAR_COUNT }, spawnStar);
 }
 
-function initScene() {
-  // doesn't start empty — new spores normally spawn from the bottom.
-  spores = Array.from({ length: SPORE_COUNT }, () => {
-    const s = spawnSpore();
-    s.y = rand(0, sporeCanvas.height);
-    s.fadeIn = 1;
-    return s;
-  });
-  stars  = Array.from({ length: STAR_COUNT  }, spawnStar);
-  clouds = Array.from({ length: CLOUD_COUNT }, () => spawnCloud(false));
-}
-
-function resizeSpores() {
-  sporeCanvas.width  = window.innerWidth;
-  sporeCanvas.height = window.innerHeight;
-  initScene();
-}
-
-// Debounce resize so we don't thrash initScene on every pixel of resizing.
-let sporeResizeTimer: ReturnType<typeof setTimeout> | null = null;
+let bgResizeTimer: ReturnType<typeof setTimeout> | null = null;
 window.addEventListener("resize", () => {
-  if (sporeResizeTimer) clearTimeout(sporeResizeTimer);
-  sporeResizeTimer = setTimeout(resizeSpores, 150);
+  if (bgResizeTimer) clearTimeout(bgResizeTimer);
+  bgResizeTimer = setTimeout(initBg, 150);
 });
 
-function drawSpores(ts: number) {
-  // Cap dt so a tab that was hidden/backgrounded doesn't produce a huge jump.
-  const dt = Math.min(ts - sporeLastTs, 64);
-  sporeLastTs = ts;
+function drawBg(ts: number) {
+  const dt = Math.min(ts - bgLastTs, 64);
+  bgLastTs = ts;
 
   const isDark = root.getAttribute("data-theme") === "dark";
-  const sky  = isDark ? SKY.dark  : SKY.light;
-  const soil = isDark ? SOIL.dark : SOIL.light;
-  const w = sporeCanvas.width, h = sporeCanvas.height, hy = h * HORIZON_H;
+  const sky    = isDark ? SKY.dark  : SKY.light;
+  const soil   = isDark ? SOIL.dark : SOIL.light;
+  const w = bgCanvas.width, h = bgCanvas.height, hy = h * HORIZON_H;
 
-  sporeCtx.clearRect(0, 0, w, h);
+  bgCtx.clearRect(0, 0, w, h);
 
-  // Sky gradient, fades to transparent so the CSS background shows through below.
-  const skyGrad = sporeCtx.createLinearGradient(0, 0, 0, h * 0.62);
+  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, h * 0.62);
   skyGrad.addColorStop(0,    isDark ? "rgba(5,12,30,0.92)"  : "rgba(184,216,240,0.88)");
   skyGrad.addColorStop(0.45, isDark ? "rgba(10,22,40,0.60)" : "rgba(218,237,248,0.55)");
   skyGrad.addColorStop(1,    "rgba(0,0,0,0)");
-  sporeCtx.fillStyle = skyGrad;
-  sporeCtx.fillRect(0, 0, w, h * 0.62);
+  bgCtx.fillStyle = skyGrad;
+  bgCtx.fillRect(0, 0, w, h * 0.62);
 
-  // Stars, twinkle via a sine-driven alpha.
   for (const star of stars) {
     star.phase += star.speed * dt;
     const alpha = (0.4 + 0.6 * (0.5 + 0.5 * Math.sin(star.phase))) * sky.starOpMax
                   * Math.max(0, 1 - star.y / (h * 0.50));
     if (alpha < 0.01) continue;
-    sporeCtx.save();
-    sporeCtx.globalAlpha = alpha;
-    sporeCtx.fillStyle   = sky.star;
-    sporeCtx.beginPath();
-    sporeCtx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-    sporeCtx.fill();
-    sporeCtx.restore();
+    bgCtx.save();
+    bgCtx.globalAlpha = alpha;
+    bgCtx.fillStyle   = sky.star;
+    bgCtx.beginPath();
+    bgCtx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+    bgCtx.fill();
+    bgCtx.restore();
   }
 
-  // Clouds, drift left, respawn off the right edge when they leave the left.
-  for (const cloud of clouds) {
-    cloud.x -= cloud.vx * dt;
-    if (cloud.x < -cloud.w - 60) Object.assign(cloud, spawnCloud(true));
-    const alpha = cloud.opacity * Math.max(0, 1 - cloud.y / (h * 0.42));
-    if (alpha < 0.02) continue;
-    sporeCtx.save();
-    sporeCtx.globalAlpha = alpha;
-    // Shadow pass first, then bright pass on top.
-    for (const puff of cloud.puffs) {
-      sporeCtx.fillStyle = sky.cloudShadow;
-      sporeCtx.beginPath();
-      sporeCtx.arc(cloud.x + puff.ox, cloud.y + puff.oy + puff.r * 0.18, puff.r * 0.9, 0, Math.PI * 2);
-      sporeCtx.fill();
-    }
-    for (const puff of cloud.puffs) {
-      sporeCtx.fillStyle = sky.cloud;
-      sporeCtx.beginPath();
-      sporeCtx.arc(cloud.x + puff.ox, cloud.y + puff.oy, puff.r, 0, Math.PI * 2);
-      sporeCtx.fill();
-    }
-    sporeCtx.restore();
-  }
-
-  // Soil layers, three overlapping bezier blobs give the horizon organic depth.
   for (const [color, opacity, yOff] of [
     [soil.a, isDark ? 0.28 : 0.20,  22],
     [soil.b, isDark ? 0.20 : 0.14,   0],
     [soil.c, isDark ? 0.12 : 0.08, -20],
   ] as [string, number, number][]) {
     const y0 = hy + yOff;
-    sporeCtx.save();
-    sporeCtx.globalAlpha = opacity;
-    sporeCtx.fillStyle   = color;
-    sporeCtx.beginPath();
-    sporeCtx.moveTo(0, h);
-    sporeCtx.lineTo(0, y0 + 10);
-    sporeCtx.bezierCurveTo(w*0.08, y0-28, w*0.18, y0+18, w*0.28, y0-10);
-    sporeCtx.bezierCurveTo(w*0.38, y0-38, w*0.48, y0+22, w*0.55, y0+4);
-    sporeCtx.bezierCurveTo(w*0.62, y0-14, w*0.70, y0-32, w*0.78, y0+8);
-    sporeCtx.bezierCurveTo(w*0.85, y0+26, w*0.92, y0-16, w,      y0+12);
-    sporeCtx.lineTo(w, h);
-    sporeCtx.closePath();
-    sporeCtx.fill();
-    sporeCtx.restore();
+    bgCtx.save();
+    bgCtx.globalAlpha = opacity;
+    bgCtx.fillStyle   = color;
+    bgCtx.beginPath();
+    bgCtx.moveTo(0, h);
+    bgCtx.lineTo(0, y0 + 10);
+    bgCtx.bezierCurveTo(w*0.08, y0-28, w*0.18, y0+18, w*0.28, y0-10);
+    bgCtx.bezierCurveTo(w*0.38, y0-38, w*0.48, y0+22, w*0.55, y0+4);
+    bgCtx.bezierCurveTo(w*0.62, y0-14, w*0.70, y0-32, w*0.78, y0+8);
+    bgCtx.bezierCurveTo(w*0.85, y0+26, w*0.92, y0-16, w,      y0+12);
+    bgCtx.lineTo(w, h);
+    bgCtx.closePath();
+    bgCtx.fill();
+    bgCtx.restore();
   }
 
-  // Floating spores, rise upward with a sinusoidal horizontal sway.
-  const sporeGreen = isDark ? "#22c55e" : "#16a34a";
-  const sporeAmber = isDark ? "#f59e0b" : "#b45309";
-  for (let i = 0; i < spores.length; i++) {
-    const s = spores[i];
-    s.y     -= s.vy * dt;
-    s.sway  += SWAY_SPEED * dt;
-    s.x     += Math.sin(s.sway) * s.swayAmp * dt;
-    s.fadeIn  = Math.min(1, s.fadeIn + 0.0008 * dt);
-    s.fadeOut = s.y < h * 0.15 ? Math.max(0, s.y / (h * 0.15)) : 1;
-    if (s.y < -s.r * 2) { spores[i] = spawnSpore(); continue; }
-    const alpha = s.opacity * s.fadeIn * s.fadeOut;
-    if (alpha < 0.005) continue;
-    sporeCtx.save();
-    sporeCtx.globalAlpha = alpha;
-    sporeCtx.fillStyle   = s.isAmber ? sporeAmber : sporeGreen;
-    sporeCtx.beginPath();
-    sporeCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    sporeCtx.fill();
-    sporeCtx.restore();
-  }
-
-  requestAnimationFrame(drawSpores);
+  requestAnimationFrame(drawBg);
 }
 
 
@@ -271,7 +307,6 @@ type BuiltinProgram = { id: number; name: string; code: string; source: "builtin
 type SavedProgram   = { id: number; name: string; code: string; createdAt?: string | null; source: "saved" };
 type ProgramRecord  = BuiltinProgram | SavedProgram;
 
-// Built-in example programs that ship with the IDE (never persisted to the server).
 const BUILTIN_PROGRAMS: BuiltinProgram[] = [
   { id: 0, name: "Hello World", code: 'print("Hello World");', source: "builtin" },
 ];
@@ -279,22 +314,19 @@ const BUILTIN_PROGRAMS: BuiltinProgram[] = [
 let programList: ProgramRecord[]                     = [];
 let currentProgramId: number | null                  = null;
 let currentProgramSource: "builtin" | "saved" | null = null;
-let lastSavedCode = ""; // used to detect unsaved changes
+let lastSavedCode = "";
 
 
 // ─── SERVER API ───────────────────────────────────────────────────────────────
 
 const API_BASE = "http://localhost:3000";
 
-// Generic fetch wrapper — throws on non-2xx responses.
 async function api<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, opts);
   if (!res.ok) throw new Error(`API ${path} failed: ${res.status}`);
   return res.json();
 }
 
-// Normalize a raw server row into a typed SavedProgram regardless of
-// whether the server returns snake_case or camelCase field names.
 const mapRow = (row: any): SavedProgram => ({
   id:        Number(row.id),
   name:      String(row.name),
@@ -303,10 +335,10 @@ const mapRow = (row: any): SavedProgram => ({
   source:    "saved",
 });
 
-const fetchSavedPrograms    = ()           => api<any[]>("/programs").then(rows => rows.map(mapRow)).catch(() => [] as SavedProgram[]);
-const fetchSavedProgramById = (id: number) => api<any>(`/programs/${id}`).then(mapRow);
+const fetchSavedPrograms      = ()           => api<any[]>("/programs").then(rows => rows.map(mapRow)).catch(() => [] as SavedProgram[]);
+const fetchSavedProgramById   = (id: number) => api<any>(`/programs/${id}`).then(mapRow);
 const deleteProgramFromServer = (id: number) => api<void>(`/programs/${id}`, { method: "DELETE" });
-const saveProgramToServer = (id: number | null, name: string, code: string) =>
+const saveProgramToServer     = (id: number | null, name: string, code: string) =>
   api<any>("/programs", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
@@ -335,16 +367,12 @@ function showToast(message: string, kind: "success" | "error" = "success") {
 
 // ─── UNSAVED INDICATOR ────────────────────────────────────────────────────────
 
-// Show the orange dot on the Save button and the "● unsaved" label
-// whenever the editor content differs from the last saved snapshot.
 function updateUnsavedState() {
-  const hasChanges = editor.value !== lastSavedCode;
+  const hasChanges = getCode() !== lastSavedCode;
   saveBtn.classList.toggle("has-unsaved", hasChanges);
   unsavedLabel.classList.toggle("is-hidden", !hasChanges);
 }
 
-// Call this after a successful save (or after loading a program) to reset
-// the baseline and clear the unsaved indicator.
 function markAsSaved(code: string) {
   lastSavedCode = code;
   updateUnsavedState();
@@ -354,58 +382,17 @@ function markAsSaved(code: string) {
 // ─── STATUS BAR ───────────────────────────────────────────────────────────────
 
 function updateStatusBar() {
-  const src = editor.value;
-  const pos = editor.selectionStart ?? 0;
-
-  // Derive line/column from the text before the cursor.
-  const before     = src.slice(0, pos).split("\n");
-  const ln         = before.length;
-  const col        = before[before.length - 1].length + 1;
-  const totalLines = src.split("\n").length;
+  const state  = cmView.state;
+  const cursor = state.selection.main.head;
+  const line   = state.doc.lineAt(cursor);
+  const ln     = line.number;
+  const col    = cursor - line.from + 1;
+  const total  = state.doc.lines;
+  const chars  = state.doc.length;
 
   statusCursor.textContent = `Ln ${ln}, Col ${col}`;
-  statusChars.textContent  = `${src.length} char${src.length !== 1 ? "s" : ""}`;
-  statusLines.textContent  = `${totalLines} line${totalLines !== 1 ? "s" : ""}`;
-
-  // Highlight the active line number in the gutter.
-  gutter.querySelectorAll(".line").forEach((el, idx) =>
-    el.classList.toggle("active-line", idx + 1 === ln)
-  );
-}
-
-
-// ─── GUTTER ───────────────────────────────────────────────────────────────────
-
-// Keep the line-number gutter in sync with the textarea content.
-// Adds or removes .line divs as lines are inserted or deleted.
-function syncGutter() {
-  const lineCount = editor.value.split("\n").length;
-  const existing  = gutter.querySelectorAll<HTMLDivElement>(".line").length;
-
-  // Append any missing line numbers.
-  for (let i = existing + 1; i <= lineCount; i++) {
-    const div = document.createElement("div");
-    div.className   = "line";
-    div.textContent = String(i);
-    gutter.appendChild(div);
-  }
-
-  // Remove surplus line numbers if lines were deleted.
-  if (existing > lineCount) {
-    Array.from(gutter.querySelectorAll<HTMLDivElement>(".line"))
-      .slice(lineCount)
-      .forEach(el => el.remove());
-  }
-}
-
-
-// ─── SYNTAX HIGHLIGHTING ──────────────────────────────────────────────────────
-
-// Rebuild the colored overlay from the current editor content using highlight.js.
-function syncHighlight() {
-  highlightOverlay.innerHTML  = hljs.highlight(editor.value, { language: "javascript" }).value + "\n";
-  highlightOverlay.scrollTop  = editor.scrollTop;
-  highlightOverlay.scrollLeft = editor.scrollLeft;
+  statusChars.textContent  = `${chars} char${chars !== 1 ? "s" : ""}`;
+  statusLines.textContent  = `${total} line${total !== 1 ? "s" : ""}`;
 }
 
 
@@ -419,7 +406,6 @@ function setActiveTab(id: string) {
 
 // ─── DEBUG HELPERS ────────────────────────────────────────────────────────────
 
-// Format one token for the Tokens debug tab.
 function tokenToPrettyLine(t: any): string {
   if (t.type === undefined) return JSON.stringify(t);
   if (t.literal !== undefined) return `Token(type=${t.type}, lexeme="${t.lexeme}", literal=${t.literal})`;
@@ -427,13 +413,12 @@ function tokenToPrettyLine(t: any): string {
   return `Token(type=${t.type})`;
 }
 
-// Render the AST as an indented text tree for the AST debug tab.
 function astToTree(node: any, indent = ""): string {
   if (!node) return `${indent}<null>`;
   const i2 = indent + "  ";
   switch (node.kind) {
-    case "Program":  return [indent + "Program",       ...(node.statements ?? []).map((s: any) => astToTree(s, i2))].join("\n");
-    case "Block":    return [indent + "Block",          ...(node.statements ?? []).map((s: any) => astToTree(s, i2))].join("\n");
+    case "Program":  return [indent + "Program",  ...(node.statements ?? []).map((s: any) => astToTree(s, i2))].join("\n");
+    case "Block":    return [indent + "Block",    ...(node.statements ?? []).map((s: any) => astToTree(s, i2))].join("\n");
     case "ExprStmt": return `${indent}ExprStmt\n${astToTree(node.expr, i2)}`;
     case "VarDecl":  return `${indent}VarDecl(${node.name})\n${astToTree(node.initializer, i2)}`;
     case "Assign":   return `${indent}Assign(${node.name})\n${astToTree(node.value, i2)}`;
@@ -456,7 +441,6 @@ function astToTree(node: any, indent = ""): string {
 
 const nowTs = () => new Date().toLocaleTimeString("en-US", { hour12: false });
 
-// Append a single timestamped row to an output container.
 function appendOutputRow(container: HTMLPreElement, text: string, kind: "ok" | "error") {
   const isOk = kind === "ok";
   container.insertAdjacentHTML("beforeend",
@@ -468,7 +452,6 @@ function appendOutputRow(container: HTMLPreElement, text: string, kind: "ok" | "
   );
 }
 
-// Populate the Output tab after a run — prints each captured line then any error.
 function renderOutputPanel(outputLines: string[], errorMsg?: string) {
   outBox.innerHTML = "";
   if (!outputLines.length && !errorMsg) {
@@ -479,7 +462,6 @@ function renderOutputPanel(outputLines: string[], errorMsg?: string) {
   if (errorMsg) appendOutputRow(outBox, errorMsg, "error");
 }
 
-// Clear all output/debug panes without touching the editor.
 function renderEmpty() {
   outBox.innerHTML = tokBox.textContent = astBox.textContent = envBox.textContent = "";
   hideErrorBar();
@@ -491,17 +473,13 @@ function renderEmpty() {
 function hideErrorBar() {
   errorBar.classList.add("is-hidden");
   errorBar.textContent = "";
-  document.querySelectorAll(".error-line-highlight").forEach(el => el.remove());
 }
 
-// Convert a character offset in the source string to a 1-based line/col pair.
 function offsetToLineCol(source: string, offset: number) {
   const lines = source.slice(0, Math.min(offset, source.length)).split("\n");
   return { line: lines.length, col: lines[lines.length - 1].length + 1 };
 }
 
-// Try to extract a source offset from the error message so we can point
-// the user to the exact line. Falls back to the last non-EOF token position.
 function findErrorOffset(source: string, errorMsg: string): number | null {
   const m = errorMsg.match(/at index (\d+)/);
   if (m) return Number(m[1]);
@@ -513,8 +491,7 @@ function findErrorOffset(source: string, errorMsg: string): number | null {
       if (t?.index !== undefined) return t.index;
     }
     if (tokens.length >= 2) return tokens[tokens.length - 2].index ?? null;
-  } catch { 
-   }
+  } catch { }
   return null;
 }
 
@@ -523,13 +500,6 @@ function showErrorBar(source: string, errorMsg: string) {
   if (offset !== null) {
     const { line, col } = offsetToLineCol(source, offset);
     errorBar.textContent = `✕  Error on line ${line}, col ${col}: ${errorMsg}`;
-    // Briefly add a CSS class so the editor can highlight the offending line.
-    editor.dataset.errorLine = String(line);
-    editor.classList.add("has-error-line");
-    setTimeout(() => {
-      editor.classList.remove("has-error-line");
-      delete editor.dataset.errorLine;
-    }, 4000);
   } else {
     errorBar.textContent = `✕  ${errorMsg}`;
   }
@@ -539,7 +509,6 @@ function showErrorBar(source: string, errorMsg: string) {
 
 // ─── RUN BUTTON STATE ─────────────────────────────────────────────────────────
 
-// Disable the Run button and spin its icon while a program is executing.
 function setRunning(running: boolean) {
   runBtn.classList.toggle("is-running", running);
   runBtn.disabled = running;
@@ -553,7 +522,6 @@ const ctx        = gameCanvas.getContext("2d")!;
 const WIDTH = gameCanvas.width, HEIGHT = gameCanvas.height;
 let currentFillColor = "#ffffff";
 
-// Draw the dark background that shows before any Dirt program runs.
 function drawBackground() {
   ctx.fillStyle   = "#0b1220";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -561,7 +529,6 @@ function drawBackground() {
   ctx.strokeRect(1, 1, WIDTH - 2, HEIGHT - 2);
 }
 
-// Graphics API object passed to the Dirt runtime for drawing builtins.
 const dirtGraphics = {
   clear()                                          { drawBackground(); },
   rect(x: number, y: number, w: number, h: number){ ctx.fillStyle = currentFillColor; ctx.fillRect(x, y, w, h); },
@@ -572,17 +539,15 @@ const dirtGraphics = {
 };
 drawBackground();
 
-// Track which keys are currently held so keyDown() can query them each frame.
 const keysDown = new Set<string>();
 window.addEventListener("keydown", e => keysDown.add(e.key));
 window.addEventListener("keyup",   e => keysDown.delete(e.key));
 const dirtInput = { keyDown: (key: string) => keysDown.has(key) };
 
-// Game loop state — null when no animated program is running.
-let activeUpdateFn:   DirtCallable | null = null;
-let activeInterpreter: any                = null;
-let activeUpdateEnv:   any                = null;
-let rafId:             number | null      = null;
+let activeUpdateFn:    DirtCallable | null = null;
+let activeInterpreter: any                 = null;
+let activeUpdateEnv:   any                 = null;
+let rafId:             number | null       = null;
 
 function stopGameLoop() {
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
@@ -593,8 +558,6 @@ function startGameLoop() {
   function frame() {
     if (!activeUpdateFn || !activeInterpreter) return;
     try {
-      // Call the registered update function by injecting a synthetic Call node
-      // into the interpreter rather than re-parsing anything.
       activeInterpreter.evaluate(
         { kind: "Call", callee: "__update__", args: [] },
         activeUpdateEnv,
@@ -619,12 +582,11 @@ function run() {
   currentFillColor = "#ffffff";
   setRunning(true);
 
-  // Defer execution one tick so the browser can paint the "running" spinner
-  // before the (potentially blocking) interpreter takes over the main thread.
   setTimeout(() => {
+    const source = getCode();
     let capturedUpdateFn: DirtCallable | null = null;
 
-    const result = runProgramDebug(editor.value, {
+    const result = runProgramDebug(source, {
       sourcePath: "web-ide",
       graphics:   dirtGraphics,
       input:      dirtInput,
@@ -637,23 +599,19 @@ function run() {
       const errorMsg = result.error ?? "Unknown error";
       renderOutputPanel(result.output ?? [], errorMsg);
       tokBox.textContent = astBox.textContent = envBox.textContent = "";
-      showErrorBar(editor.value, errorMsg);
+      showErrorBar(source, errorMsg);
       setActiveTab("output");
       return;
     }
 
-    // Populate all debug panels.
     tokBox.textContent = result.tokens.map(tokenToPrettyLine).join("\n");
     astBox.textContent = astToTree(result.ast);
     envBox.textContent = JSON.stringify(result.env, null, 2);
     renderOutputPanel(result.output, undefined);
     setActiveTab("output");
 
-    // If the program called onUpdate(), wire up the game loop.
     if (capturedUpdateFn) {
-      // Re-run the program in a fresh interpreter that holds live references
-      // to the graphics/input APIs, then pull the update function out of it.
-      const tokens = lex(editor.value);
+      const tokens = lex(source);
       const program = parse(tokens);
       const env = new Environment();
       let updateFnValue: any = null;
@@ -668,8 +626,6 @@ function run() {
       interp.executeProgram(program);
 
       if (updateFnValue) {
-        // Expose the update function under a synthetic name so startGameLoop
-        // can call it via a simple Call node without any re-parsing.
         const callEnv = new Environment(env);
         callEnv.define("__update__", updateFnValue);
         activeInterpreter = interp;
@@ -685,12 +641,10 @@ function run() {
 
 // ─── PROJECT MANAGEMENT ───────────────────────────────────────────────────────
 
-// Reflect the active program name in the browser tab title.
 function setEditorLabel(name: string) {
   document.title = `${name} — Dirt Web IDE`;
 }
 
-// Rebuild the project dropdown from the combined builtin + server list.
 async function renderProgramDropdown() {
   programList = [...BUILTIN_PROGRAMS, ...await fetchSavedPrograms()];
   examples.innerHTML = "";
@@ -700,15 +654,12 @@ async function renderProgramDropdown() {
     opt.textContent = p.name;
     examples.appendChild(opt);
   });
-
-  // Re-select the currently loaded program if it still exists in the list.
   if (currentProgramId !== null && currentProgramSource !== null) {
     const v = `${currentProgramSource}:${currentProgramId}`;
     if (Array.from(examples.options).some(o => o.value === v)) examples.value = v;
   }
 }
 
-// Load a program into the editor and fully refresh the overlay, gutter, and status bar.
 async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
   const program = source === "builtin"
     ? BUILTIN_PROGRAMS.find(p => p.id === id)!
@@ -717,27 +668,12 @@ async function loadProgramIntoEditor(source: "builtin" | "saved", id: number) {
   currentProgramId     = program.id;
   currentProgramSource = source;
 
-  // Set the textarea value and reset scroll before touching the overlay.
-  editor.value     = program.code;
-  editor.scrollTop = editor.scrollLeft = 0;
+  setCode(program.code);
+  cmView.dispatch({ effects: EditorView.scrollIntoView(0) });
 
   examples.value = `${source}:${id}`;
   setEditorLabel(program.name);
   markAsSaved(program.code);
-
-  // Rebuild the overlay, gutter, and status bar here.
-  // The textarea text is color:transparent, the overlay is the only thing
-  // the user sees. 
-  syncHighlight();
-  syncGutter();
-  updateStatusBar();
-
-  // before scrollTop/scrollLeft values are stable for the new content.
-  requestAnimationFrame(() => {
-    highlightOverlay.scrollTop  = editor.scrollTop;
-    highlightOverlay.scrollLeft = editor.scrollLeft;
-    gutter.scrollTop            = editor.scrollTop;
-  });
 }
 
 async function initializePrograms() {
@@ -751,7 +687,7 @@ async function saveCurrentProgram() {
   if (!name?.trim()) return;
 
   const savedId = currentProgramSource === "saved" ? currentProgramId : null;
-  const saved   = await saveProgramToServer(savedId, name.trim(), editor.value);
+  const saved   = await saveProgramToServer(savedId, name.trim(), getCode());
 
   currentProgramId     = saved.id;
   currentProgramSource = "saved";
@@ -765,16 +701,10 @@ function createNewProgram() {
   stopGameLoop();
   currentProgramId     = null;
   currentProgramSource = null;
-  editor.value         = "";
   lastSavedCode        = "";
-
-  document.title = "Untitled — Dirt Web IDE";
-
-  updateUnsavedState();
+  document.title       = "Untitled — Dirt Web IDE";
+  setCode("");
   renderEmpty();
-  syncHighlight();
-  syncGutter();
-  updateStatusBar();
   setActiveTab("output");
 }
 
@@ -783,14 +713,12 @@ async function deleteCurrentProgram() {
     if (currentProgramSource === "builtin") showToast("Built-in programs cannot be deleted.", "error");
     return;
   }
-
   const current = programList.find(p => p.source === "saved" && p.id === currentProgramId);
   if (!current || !window.confirm(`Delete "${current.name}"?`)) return;
 
   await deleteProgramFromServer(current.id);
   stopGameLoop();
 
-  // Fall back to the first builtin after deletion.
   currentProgramId     = 0;
   currentProgramSource = "builtin";
   await renderProgramDropdown();
@@ -798,27 +726,6 @@ async function deleteCurrentProgram() {
   renderEmpty();
   showToast(`Deleted "${current.name}"`, "success");
 }
-
-
-// ─── EDITOR EVENT LISTENERS ───────────────────────────────────────────────────
-
-// Keep the overlay scroll position locked to the textarea's scroll position.
-editor.addEventListener("scroll", () => {
-  highlightOverlay.scrollTop  = editor.scrollTop;
-  highlightOverlay.scrollLeft = editor.scrollLeft;
-  gutter.scrollTop            = editor.scrollTop;
-});
-
-// Rebuild highlighting and gutter on every keystroke.
-editor.addEventListener("input", () => {
-  syncHighlight();
-  syncGutter();
-  updateStatusBar();
-  updateUnsavedState();
-});
-
-// Update cursor position in the status bar on any navigation event.
-["click", "keyup", "selectionchange"].forEach(ev => editor.addEventListener(ev, updateStatusBar));
 
 
 // ─── BUTTON + TAB LISTENERS ───────────────────────────────────────────────────
@@ -836,11 +743,7 @@ runBtn.addEventListener("click", run);
 clearBtn.addEventListener("click", () => {
   stopGameLoop();
   renderEmpty();
-  editor.value = "";
-  syncHighlight();
-  syncGutter();
-  updateStatusBar();
-  updateUnsavedState();
+  setCode("");
   setActiveTab("output");
 });
 
@@ -858,20 +761,12 @@ deleteBtn.addEventListener("click", async () => {
 
 
 (async function init() {
-  try {
-    // Load the default program, this sets editor.value and runs syncHighlight()
-    // synchronously, so the overlay is populated before the first paint.
-    await initializePrograms();
-  } catch (e) {
-    console.error("Programs failed to load:", e);
-  }
-
-  // Clear the output pane and show the Output tab as the default view.
+  try { await initializePrograms(); }
+  catch (e) { console.error("Programs failed to load:", e); }
   renderEmpty();
   setActiveTab("output");
 })();
 
-// Start the background animation immediately
-resizeSpores();
-sporeLastTs = performance.now();
-requestAnimationFrame(drawSpores);
+initBg();
+bgLastTs = performance.now();
+requestAnimationFrame(drawBg);
