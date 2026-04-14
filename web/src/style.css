@@ -2,11 +2,11 @@
     Sections:
       1.  Theme tokens
       2.  Base reset
-      3.  Background canvas
+      3.  Background canvas + CSS clouds
       4.  App shell + IDE card
       5.  Header + hex logo animation
       6.  Topbar
-      7.  Editor card
+      7.  Editor card (CodeMirror 6)
       8.  Status bar + action buttons
       9.  Output card
      10.  Utilities + scrollbars + responsive
@@ -97,7 +97,7 @@ body {
 }
 
 
-/* 3. BACKGROUND CANVAS */
+/* 3. BACKGROUND CANVAS + CSS CLOUDS */
 
 #sporeBg {
   position:       fixed;
@@ -106,6 +106,33 @@ body {
   height:         100%;
   pointer-events: none;
   z-index:        -1;
+}
+
+/* CSS clouds — fixed SVGs that drift left endlessly via a single keyframe.
+   Each SVG uses .cloud-fill circles + a rect base to form an organic cloud shape.
+   Per-cloud variation (position, size, speed) lives in inline style on the SVG tag.
+   Negative animation-delay staggers them so they're spread across the sky on load. */
+.bg-cloud {
+  position:       fixed;
+  left:           105%;   /* start just off the right edge */
+  height:         auto;
+  pointer-events: none;
+  z-index:        -1;
+  animation:      cloudDrift linear infinite;
+  opacity:        0.82;
+}
+
+.cloud-fill {
+  fill: rgba(255,255,255,0.78);
+}
+
+:root[data-theme="dark"] .cloud-fill {
+  fill: rgba(28,44,68,0.62);
+}
+
+@keyframes cloudDrift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-210vw); }
 }
 
 
@@ -168,150 +195,89 @@ body {
   transform-origin: 15px 27px; }
 
 .hex-ring  { 
-  fill: none; stroke:
-   #16a34a; 
-   stroke-width: 1.5; 
-   opacity: 0.35; 
-   transform-origin: 15px 16px; 
-   animation: hexSpin 18s linear infinite; }
+  fill: none; stroke: #16a34a; 
+  stroke-width: 1.5; 
+  opacity: 0.35; 
+  transform-origin: 15px 16px; 
+  animation: hexSpin 18s linear infinite; }
 
-.hex-fill  { 
-  fill: #16a34a; 
-  opacity: 0.18; }
-
-.hex-dirt  { 
-  fill: #b45309; 
-  opacity: 0.65; }
+.hex-fill  { fill: #16a34a; opacity: 0.18; }
+.hex-dirt  { fill: #b45309; opacity: 0.65; }
 
 .hex-stem  { 
-  stroke: #16a34a; 
-  fill: none; transform-box:
-   fill-box; transform-origin: 50% 100%; 
-   animation: hexStemGrow 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
+  stroke: #16a34a; fill: none; 
+  transform-box: fill-box; transform-origin: 50% 100%; 
+  animation: hexStemGrow 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
 
-.hex-leaf-l{ fill: #16a34a; 
-  transform-box: fill-box; 
-  transform-origin: 100% 100%; 
+.hex-leaf-l { 
+  fill: #16a34a; 
+  transform-box: fill-box; transform-origin: 100% 100%; 
   animation: hexLeaf 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.45s both; }
 
-.hex-leaf-r{ fill: #15803d; 
-  transform-box: fill-box; 
-  transform-origin:   0% 100%;
-   animation: hexLeaf 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.65s both; }
+.hex-leaf-r { 
+  fill: #15803d; 
+  transform-box: fill-box; transform-origin: 0% 100%;
+  animation: hexLeaf 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.65s both; }
 
-@keyframes hexSpin     { 
-  to  { transform: rotate(360deg); } }
-
-@keyframes hexStemGrow { 
-  from { transform: scaleY(0); 
-          opacity: 0; } 
-  to { transform: scaleY(1); 
-        opacity: 1; } }
-
-@keyframes hexLeaf     {
-  from { transform: scale(0); 
-     opacity: 0; } 
-  to { transform: scale(1); 
-     opacity: 1; } }
-
-  
-@keyframes hexSway     { 
-  0%,100% { transform: rotate(0deg); }
-   25% { transform: rotate(3.5deg); } 
-   75% { transform: rotate(-3.5deg); } }
+@keyframes hexSpin     { to  { transform: rotate(360deg); } }
+@keyframes hexStemGrow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+@keyframes hexLeaf     { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes hexSway     { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(3.5deg); } 75% { transform: rotate(-3.5deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hex-logo, .hex-ring, .hex-stem, .hex-leaf-l, .hex-leaf-r { 
-    animation: none; 
-    transform: none;
-     opacity: 1; }
+  .hex-logo, .hex-ring, .hex-stem, .hex-leaf-l, .hex-leaf-r { animation: none; transform: none; opacity: 1; }
   .hex-ring { opacity: 0.35; }
- .hex-fill { opacity: 0.18; } 
- .hex-dirt { opacity: 0.65; }
+  .hex-fill { opacity: 0.18; }
+  .hex-dirt { opacity: 0.65; }
 }
 
 .icon-btn {
-  display: inline-flex; 
-  align-items: center; 
-  gap: 6px;
-  padding: 8px 14px; 
-  border-radius: 8px;
-  border: 1px solid var(--border); 
-  background: var(--panel);
-  color: var(--text-2); 
-  font-size: 13px; 
-  font-weight: 600;
-  cursor: pointer;
-   transition: background 0.15s, color 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--panel);
+  color: var(--text-2); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.icon-btn:hover {
-   background: var(--secondary-btn); 
-   color: var(--text); }
+.icon-btn:hover { background: var(--secondary-btn); color: var(--text); }
 
 
 /* 6. TOPBAR */
 
-.content { 
-  background: var(--surface);
-   padding: 18px 20px 20px; }
+.content { background: var(--surface); padding: 18px 20px 20px; }
 
-.topbar { 
-  display: flex; 
-  align-items: center; 
-  gap: 10px;
-   margin-bottom: 16px; }
+.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 
 .label {
-  font-weight: 600;
-   color: var(--text-3);
-  font-size: 12px; 
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-   white-space: nowrap;
+  font-weight: 600; color: var(--text-3);
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; white-space: nowrap;
 }
 
-.select-wrap { 
-  position: relative; 
-  width: 260px; }
+.select-wrap { position: relative; width: 260px; }
 
 .select {
-  width: 100%; 
-  appearance: none;
-  border: 1px solid var(--border); 
-  border-radius: 8px;
-  background: var(--beige);
-  padding: 9px 32px 9px 12px;
-  color: var(--text); 
-  font-size: 13px; 
-  font-weight: 500; 
-  cursor: pointer;
+  width: 100%; appearance: none;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--beige); padding: 9px 32px 9px 12px;
+  color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.select:focus {
-   outline: none;
-    border-color: var(--border-strong); }
+.select:focus { outline: none; border-color: var(--border-strong); }
 
 .chev {
-  position: absolute;
-   right: 11px; top: 50%;
-    transform: translateY(-50%);
-  color: var(--text-3); 
-  font-size: 11px;
-   pointer-events: none;
+  position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); font-size: 11px; pointer-events: none;
 }
 
 .unsaved-dot {
   display: inline-block; width: 7px; height: 7px;
-  border-radius: 50%; 
-  background: #f59e0b;
-  margin-right: 5px; 
-  opacity: 0;
-  transition: opacity 0.2s; 
-  flex-shrink: 0;
+  border-radius: 50%; background: #f59e0b;
+  margin-right: 5px; opacity: 0;
+  transition: opacity 0.2s; flex-shrink: 0;
 }
 #saveBtn.has-unsaved .unsaved-dot { opacity: 1; }
 
 
-/* 7. EDITOR CARD */
+/* 7. EDITOR CARD (CodeMirror 6) */
 
 .grid {
   display:               grid;
@@ -321,154 +287,53 @@ body {
 }
 
 .card {
-  border: 1px solid var(--border);
-   border-radius: var(--card-radius);
-  background: var(--panel); 
-  overflow: hidden;
-  display: flex; 
-  flex-direction: column;
+  border: 1px solid var(--border); border-radius: var(--card-radius);
+  background: var(--panel); overflow: hidden;
+  display: flex; flex-direction: column;
 }
 
 .editor-card { padding: 12px; }
 
-.editor {
-  display: grid; 
-  grid-template-columns: 40px 1fr;
-  border-radius: 8px; 
-  border: 1px solid var(--border);
-  overflow: hidden; 
-  flex: 1;
+/* #editor is the CM6 mount point. CM6 injects .cm-editor inside it.
+   All colors, fonts, and token styles are defined in main.ts via
+   EditorView.theme() and HighlightStyle — not here — because CM6's
+   injected <style> blocks ignore external CSS variables. */
+.editor { flex: 1; }
+
+/* Give the CM6 wrapper the same border + radius as the old textarea had. */
+.editor .cm-editor {
+  border-radius: 8px;
+  border:        1px solid var(--border);
+  overflow:      hidden;
 }
 
-.gutter {
-  background: var(--gutter-bg); 
-  text-align: center;
-  color: var(--text-3); 
-  font-family: var(--mono);
-   font-size: 12px;
-    font-weight: 500;
-  user-select: none; 
-  border-right: 1px solid var(--border);
-  overflow: hidden; height: var(--editor-height);
-}
-
-.gutter .line             { height: 22px; line-height: 22px; }
-.gutter .line:first-child { margin-top: 10px; }
-.gutter .line.active-line { color: var(--text); font-weight: 700; }
-
-.editor-stack {
-   position: relative; 
-   height: var(--editor-height); 
-   overflow: hidden; }
-
-.highlight-overlay,
-.code {
-  font-family: var(--mono); 
-  font-size: 13.5px; 
-  line-height: 22px;
-  padding: 10px 14px; 
-  white-space: pre;
-   word-wrap: normal;
-  tab-size: 2; 
-  box-sizing: border-box;
-   width: 100%;
-    height: 100%;
-}
-
-/* highlight.js overrides — swap token classes to match the Dirt color palette */
-.highlight-overlay {
-  position: absolute;
-   top: 0; 
-   left: 0;
-  pointer-events: none; 
-  background: var(--code-bg);
-   color: var(--text);
-  border: none; 
-  overflow: hidden; z-index: 1;
-}
-
-/* Reset hljs wrapper so plain text inherits the theme color instead of hljs gray. */
-.highlight-overlay .hljs { color: inherit; background: transparent; }
-
-/* Scoped hljs token colors */
-.highlight-overlay .hljs-keyword,
-.highlight-overlay .hljs-operator        { color: #7c3aed; }
-.highlight-overlay .hljs-title,
-.highlight-overlay .hljs-title.function_ { color: #16a34a; font-weight: 500; }
-.highlight-overlay .hljs-number          { color: #b45309; }
-.highlight-overlay .hljs-string          { color: #0369a1; }
-.highlight-overlay .hljs-punctuation,
-.highlight-overlay .hljs-comment         { color: var(--text-3); }
-.highlight-overlay .hljs-built_in        { color: #16a34a; }
-
-:root[data-theme="dark"] .highlight-overlay .hljs-keyword,
-:root[data-theme="dark"] .highlight-overlay .hljs-operator        { color: #a78bfa; }
-:root[data-theme="dark"] .highlight-overlay .hljs-title,
-:root[data-theme="dark"] .highlight-overlay .hljs-title.function_ { color: #22c55e; }
-:root[data-theme="dark"] .highlight-overlay .hljs-number          { color: #f59e0b; }
-:root[data-theme="dark"] .highlight-overlay .hljs-string          { color: #38bdf8; }
-:root[data-theme="dark"] .highlight-overlay .hljs-built_in        { color: #22c55e; }
-
-.code {
-  position: relative;
-   z-index: 2; 
-  background: transparent;
-  color: transparent;
-   caret-color: var(--btn);
-  border: none;
-   outline: none; 
-   resize: none; 
-   overflow: auto;
-}
+/* Scrollbar inside the CM6 scroller — matches the rest of the IDE. */
+.editor .cm-scroller::-webkit-scrollbar       { width: 6px; height: 6px; }
+.editor .cm-scroller::-webkit-scrollbar-track { background: transparent; }
+.editor .cm-scroller::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 
 .error-bar {
-  margin-top: 8px; 
-  padding: 8px 12px;
-   border-radius: 7px;
-  background: #fef2f2;
-   border: 1px solid #fca5a5;
-    color: #b91c1c;
-  font-family: var(--mono); 
-  font-size: 12.5px; 
-  line-height: 1.5;
+  margin-top: 8px; padding: 8px 12px; border-radius: 7px;
+  background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
   animation: errorSlideIn 0.18s ease-out;
 }
-:root[data-theme="dark"]
- .error-bar { 
-  background: #1c0a0a;
-   border-color: #7f1d1d; 
-   color: #fca5a5; }
-@keyframes errorSlideIn { 
-  from { opacity: 0;
-     transform: translateY(-4px); } 
-  to { opacity: 1;
-     transform: translateY(0); } }
+:root[data-theme="dark"] .error-bar { background: #1c0a0a; border-color: #7f1d1d; color: #fca5a5; }
+@keyframes errorSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
 
 /* 8. STATUS BAR + BUTTONS */
 
 .status-bar {
-  display: flex;
-   align-items: center;
-    justify-content: space-between;
-  height: var(--status-bar-height); 
-  margin-top: 6px;
-   padding: 0 6px;
-  border-radius: 6px;
-   background: var(--gutter-bg); 
-   border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--status-bar-height); margin-top: 6px; padding: 0 6px;
+  border-radius: 6px; background: var(--gutter-bg); border: 1px solid var(--border);
   font-family: var(--mono); font-size: 11px; color: var(--text-3);
   user-select: none; flex-shrink: 0;
 }
 
-.status-left  {
-   display: flex;
-    gap: 16px;
-     align-items: center; }
-.status-right { 
-  display: flex;
-   gap: 10px;
-    align-items: center; }
+.status-left  { display: flex; gap: 16px; align-items: center; }
+.status-right { display: flex; gap: 10px; align-items: center; }
 
 .status-pill {
   background: var(--border); color: var(--text-2);
@@ -547,16 +412,12 @@ body {
 
 .is-hidden { display: none !important; }
 
-.output::-webkit-scrollbar,
-.code::-webkit-scrollbar          { width: 6px; height: 6px; }
-.output::-webkit-scrollbar-track,
-.code::-webkit-scrollbar-track    { background: transparent; }
-.output::-webkit-scrollbar-thumb,
-.code::-webkit-scrollbar-thumb    { background: var(--border-strong); border-radius: 3px; }
+.output::-webkit-scrollbar       { width: 6px; height: 6px; }
+.output::-webkit-scrollbar-track { background: transparent; }
+.output::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 
 @media (max-width: 860px) {
   .grid        { grid-template-columns: 1fr; }
   .select-wrap { width: 100%; }
   .header      { flex-direction: column; gap: 12px; align-items: flex-start; }
 }
-

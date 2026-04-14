@@ -57,20 +57,13 @@
 
             <!--EDITOR CARD-->
             <section class="card editor-card">
-              <div class="editor">
-                <div class="gutter" aria-hidden="true"></div>
-                <div class="editor-stack">
-                  <div id="highlightOverlay" class="highlight-overlay" aria-hidden="true"></div>
-                  <textarea
-                    id="editor"
-                    class="code"
-                    spellcheck="false"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    aria-label="Code editor"
-                  ></textarea>
-                </div>
-              </div>
+
+              <!--
+                #editor is now a plain div — CodeMirror 6 injects its own DOM tree
+                into it at runtime. The old textarea, highlight overlay, and gutter
+                divs are gone; CM6 provides all of that natively.
+              -->
+              <div id="editor" class="editor" aria-label="Code editor"></div>
 
               <div id="errorBar" class="error-bar is-hidden" aria-live="polite"></div>
 
@@ -120,9 +113,68 @@
       </div>
     </div>
 
-    <!--Toastify -->
-
+    <!-- Sky/stars/soil canvas — drawn by main.ts -->
     <canvas id="sporeBg" aria-hidden="true"></canvas>
+
+    <!-- CSS-animated SVG clouds — drift left endlessly via @keyframes cloudDrift -->
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:6vh; width:260px; animation-duration:110s; animation-delay:0s"
+         viewBox="0 0 260 90" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="80"  cy="62" r="34"/>
+      <circle class="cloud-fill" cx="120" cy="50" r="42"/>
+      <circle class="cloud-fill" cx="166" cy="56" r="36"/>
+      <circle class="cloud-fill" cx="200" cy="64" r="28"/>
+      <circle class="cloud-fill" cx="50"  cy="68" r="26"/>
+      <rect   class="cloud-fill" x="24" y="62" width="212" height="28" rx="4"/>
+    </svg>
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:14vh; width:340px; animation-duration:145s; animation-delay:-38s"
+         viewBox="0 0 340 70" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="90"  cy="46" r="28"/>
+      <circle class="cloud-fill" cx="138" cy="36" r="36"/>
+      <circle class="cloud-fill" cx="192" cy="40" r="32"/>
+      <circle class="cloud-fill" cx="244" cy="46" r="26"/>
+      <circle class="cloud-fill" cx="56"  cy="52" r="22"/>
+      <circle class="cloud-fill" cx="290" cy="50" r="20"/>
+      <rect   class="cloud-fill" x="34" y="48" width="276" height="22" rx="4"/>
+    </svg>
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:5vh; width:170px; animation-duration:90s; animation-delay:-62s"
+         viewBox="0 0 170 66" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="56"  cy="44" r="26"/>
+      <circle class="cloud-fill" cx="90"  cy="34" r="32"/>
+      <circle class="cloud-fill" cx="126" cy="42" r="26"/>
+      <circle class="cloud-fill" cx="38"  cy="50" r="20"/>
+      <rect   class="cloud-fill" x="18" y="44" width="134" height="22" rx="4"/>
+    </svg>
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:20vh; width:220px; animation-duration:125s; animation-delay:-15s"
+         viewBox="0 0 220 72" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="68"  cy="48" r="30"/>
+      <circle class="cloud-fill" cx="110" cy="38" r="36"/>
+      <circle class="cloud-fill" cx="156" cy="46" r="30"/>
+      <circle class="cloud-fill" cx="44"  cy="54" r="22"/>
+      <circle class="cloud-fill" cx="192" cy="54" r="20"/>
+      <rect   class="cloud-fill" x="22" y="50" width="176" height="22" rx="4"/>
+    </svg>
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:8vh; width:200px; animation-duration:105s; animation-delay:-80s"
+         viewBox="0 0 200 86" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="68"  cy="54" r="36"/>
+      <circle class="cloud-fill" cx="108" cy="40" r="44"/>
+      <circle class="cloud-fill" cx="152" cy="52" r="34"/>
+      <circle class="cloud-fill" cx="42"  cy="62" r="26"/>
+      <rect   class="cloud-fill" x="16" y="58" width="168" height="28" rx="4"/>
+    </svg>
+    <svg class="bg-cloud" aria-hidden="true"
+         style="top:24vh; width:130px; animation-duration:80s; animation-delay:-50s"
+         viewBox="0 0 130 52" xmlns="http://www.w3.org/2000/svg">
+      <circle class="cloud-fill" cx="44"  cy="34" r="22"/>
+      <circle class="cloud-fill" cx="72"  cy="26" r="26"/>
+      <circle class="cloud-fill" cx="100" cy="34" r="20"/>
+      <circle class="cloud-fill" cx="28"  cy="38" r="16"/>
+      <rect   class="cloud-fill" x="12" y="36" width="106" height="16" rx="4"/>
+    </svg>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

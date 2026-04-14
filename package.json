@@ -28,9 +28,15 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.41.0",
+    "@lezer/highlight": "^1.2.3",
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/slim": "^3.9.1",
-    "highlight.js": "^11.11.1",
+    "codemirror": "^6.0.2",
     "simplex-noise": "^4.0.3",
     "toastify-js": "^1.12.0"
   }
