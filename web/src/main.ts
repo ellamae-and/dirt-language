@@ -46,8 +46,12 @@ function setTheme(mode: "light" | "dark") {
   cmView?.dispatch({ effects: highlightCompartment.reconfigure(syntaxHighlighting(dark ? darkHighlight : lightHighlight)) });
 }
 
+// Store the preference now but DO NOT call setTheme() yet. cmView is declared
+// with `let` further down the file and is in the Temporal Dead Zone until that
+// line executes. Even `cmView?.dispatch` throws a ReferenceError on a TDZ
+// binding — optional chaining doesn't protect against TDZ, only against null/undefined.
+// We apply the theme right after cmView is constructed (see below).
 const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
-setTheme(savedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
 themeToggle.addEventListener("click", () => {
   const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
@@ -175,21 +179,22 @@ const cmState = EditorState.create({
   ],
 });
 
-// cmView is declared with `let` because setTheme() references it before the
-// EditorView constructor runs. the reference is safe because setTheme is only
-// called after cmView is assigned (the initial setTheme call at the top uses
-// optional chaining: cmView?.dispatch).
+// cmView must be declared with `let` so setTheme() can reference it at definition
+// time without a const TDZ crash. It is assigned immediately below.
 let cmView: EditorView;
 cmView = new EditorView({ state: cmState, parent: editorMount });
 
-// Also update the base theme compartment when the theme button is clicked.
-// We patch setTheme here after cmView exists.
-const _origSetTheme = setTheme;
-// Override to also swap the base editor theme, not just the highlight style.
-// (The highlight swap is already inside setTheme via cmView?.dispatch above.)
+// NOW it is safe to apply the saved theme — cmView exists and all the highlight/
+// theme compartment consts above are fully initialized.
+setTheme(savedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+
+// When the toggle is clicked, setTheme() already flipped data-theme to the NEW
+// value before this listener fires. So we read data-theme directly — no inversion.
+// This listener syncs the CM6 base-theme compartment (bg, gutter, cursor) which
+// setTheme() can't reach because it only touches the highlight compartment.
 themeToggle.addEventListener("click", () => {
-  const dark = root.getAttribute("data-theme") === "dark";
-  cmView.dispatch({ effects: themeCompartment.reconfigure(dark ? darkTheme : lightTheme) });
+  const nowDark = root.getAttribute("data-theme") === "dark";
+  cmView.dispatch({ effects: themeCompartment.reconfigure(nowDark ? darkTheme : lightTheme) });
 });
 
 // Read the current source text from the CM6 document.
@@ -207,10 +212,14 @@ function setCode(code: string) {
 
 type Star = { x: number; y: number; r: number; phase: number; speed: number };
 
+// starOpMax controls peak star brightness. Light mode raised to 0.55 so the
+// blue dots are actually visible against the pale sky (was 0.45, too faint).
 const SKY = {
-  light: { star: "#4a90c4", starOpMax: 0.18 },
+  light: { star: "#4a90c4", starOpMax: 0.55 },
   dark:  { star: "#e8ecf4", starOpMax: 0.85 },
 };
+// Three overlapping soil layers drawn at the horizon. Opacity values raised so
+// the green ground is clearly visible in both themes.
 const SOIL = {
   light: { a: "#5a7a42", b: "#4a6835", c: "#3a5428" },
   dark:  { a: "#3a5428", b: "#2d4420", c: "#1e3018" },
@@ -254,12 +263,16 @@ function drawBg(ts: number) {
 
   bgCtx.clearRect(0, 0, w, h);
 
-  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, h * 0.62);
-  skyGrad.addColorStop(0,    isDark ? "rgba(5,12,30,0.92)"  : "rgba(184,216,240,0.88)");
-  skyGrad.addColorStop(0.45, isDark ? "rgba(10,22,40,0.60)" : "rgba(218,237,248,0.55)");
+  // Single gradient pass: opaque sky color at the top, fading to fully transparent
+  // at the bottom. The body background color shows through beneath it naturally.
+  // No solid fill needed — a solid fill was causing the hard blue block.
+  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, h * 0.68);
+  skyGrad.addColorStop(0,    isDark ? "rgba(5,12,30,0.94)"   : "rgba(160,206,234,0.92)");
+  skyGrad.addColorStop(0.35, isDark ? "rgba(8,18,40,0.75)"   : "rgba(184,216,240,0.70)");
+  skyGrad.addColorStop(0.70, isDark ? "rgba(10,22,44,0.30)"  : "rgba(210,232,246,0.30)");
   skyGrad.addColorStop(1,    "rgba(0,0,0,0)");
   bgCtx.fillStyle = skyGrad;
-  bgCtx.fillRect(0, 0, w, h * 0.62);
+  bgCtx.fillRect(0, 0, w, h * 0.68);
 
   for (const star of stars) {
     star.phase += star.speed * dt;
@@ -275,10 +288,12 @@ function drawBg(ts: number) {
     bgCtx.restore();
   }
 
+  // Three bezier ground layers at the horizon. Opacity raised significantly —
+  // old values (0.08–0.28) made the soil nearly invisible in both themes.
   for (const [color, opacity, yOff] of [
-    [soil.a, isDark ? 0.28 : 0.20,  22],
-    [soil.b, isDark ? 0.20 : 0.14,   0],
-    [soil.c, isDark ? 0.12 : 0.08, -20],
+    [soil.a, isDark ? 0.72 : 0.60,  22],  // front layer — most opaque
+    [soil.b, isDark ? 0.55 : 0.44,   0],  // mid layer
+    [soil.c, isDark ? 0.38 : 0.28, -20],  // back layer — slightly higher, most transparent
   ] as [string, number, number][]) {
     const y0 = hy + yOff;
     bgCtx.save();
