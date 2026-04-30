@@ -175,6 +175,7 @@ The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Da
 - **[window.matchMedia](https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia)** — Detects the user's OS-level dark mode preference on first load.
 
 
+## Known Issues
 
 **Error messages sometimes point to the wrong line.**
 The lexer records token positions *after* advancing the cursor instead of before. I know exactly why it's broken. I do not know exactly how to fix it without breaking six other things. This is a tomorrow problem. It has been a tomorrow problem for three weeks.
