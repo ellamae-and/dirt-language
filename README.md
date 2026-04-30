@@ -113,6 +113,26 @@ A Dirt program goes through three stages:
 
 The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Database` class in `server/src/database.ts` provides a reusable interface with `Connect()`, `Disconnect()`, and `Execute()` methods. The `Program` class in `server/src/program.ts` implements the Active Record pattern with full CRUD operations.
 
+## Known Issues
+
+**Error messages sometimes point to the wrong line.**
+The lexer records token positions *after* advancing the cursor instead of before. I know exactly what's wrong. I know exactly how to fix it. It's one line. I will get to it. Eventually. Probably.
+
+**There are no arrays.**
+If you need a list of things, you get to do what I did in the spirograph demo: `let p0x = 0; let p1x = 0; let p2x = 0; let p3x = 0;` and so on. It builds character.
+
+**You can't do `x += 1`.**
+It's `x = x + 1;` like our ancestors intended.
+
+**Single-line `if` statements without braces will ruin your day.**
+Just use the braces. Trust me.
+
+**The server doesn't tell you if the port is already in use.**
+It just doesn't start. You get to figure that one out yourself. Check port 3000.
+
+**`node_modules` is committed to the repo.**
+I know. I *know*.
+
 ## FAQ
 
 **Does Dirt support arrays?**
@@ -133,17 +153,11 @@ Because I said so. Use `mod()`.
 **Can I import other files?**
 That sounds like a you problem. No.
 
-**Does it have error messages?**
-Yes, and they're surprisingly polite about telling you what you did wrong.
-
 **Why is it called Dirt?**
 Because I named it that.
 
 **Is it fast?**
 It's a tree-walk interpreter. It's as fast as it needs to be. Don't benchmark it.
-
-**Can I contribute?**
-You want to contribute to a language that doesn't have arrays? I respect the energy, but no.
 
 **Should I use this in production?**
 I am begging you not to.
