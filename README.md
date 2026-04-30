@@ -138,7 +138,7 @@ The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Da
 - **[Express](https://expressjs.com/)** — HTTP server framework for the REST API.
 - **[cors](https://www.npmjs.com/package/cors)** — CORS middleware so the frontend can talk to the backend on a different port.
 - **[better-sqlite3](https://github.com/WiseLibs/better-sqlite3)** — Synchronous SQLite driver for Node.js. Stores saved programs.
-- **[SQLite](https://www.sqlite.org/)** — The actual database engine under `better-sqlite3`. Zero-config, single-file persistence.
+- **[SQLite](https://www.sqlite.org/)** — The actual database engine under `better-sqlite3`.
 
 ### UI & Notifications
 
@@ -146,17 +146,14 @@ The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Da
 
 ### Concepts & Inspiration
 
-- **[Crafting Interpreters](https://craftinginterpreters.com/)** by Robert Nystrom — The bible for building a language from scratch. The tree-walk interpreter architecture, recursive descent parser structure, and environment scope chain design are all influenced by this book.
+- **[Crafting Interpreters](https://craftinginterpreters.com/)** by Robert Nystrom — A book I bought for building a language from scratch. The tree-walk interpreter architecture, recursive descent parser structure, and environment scope chain design are all influenced by this book.
 - **[The Super Tiny Compiler](https://github.com/jamiebuilds/the-super-tiny-compiler)** — Helped clarify the mental model of lexer → parser → interpreter as a pipeline.
 - **[MDN Web Docs — Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)** — Reference for `CanvasRenderingContext2D` methods (`fillRect`, `arc`, `beginPath`, etc.) used in the graphics builtins.
-- **[MDN Web Docs — KeyboardEvent.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)** — Reference for key name strings used by `keyDown()`.
 - **[MDN Web Docs — requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame)** — How the game loop runs at ~60fps.
 
 ### CSS & Visual Design
 
 - **[CSS box-shadow star fields](https://css-tricks.com/)** — The dark mode star effect uses `box-shadow` on pseudo-elements to scatter pixel-sized dots across the viewport.
-- **[CSS @keyframes](https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes)** — Used for cloud drift animation, star twinkling, hex logo sway, and the sky breathing effect.
-- **[SVG path syntax](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths)** — The grass terrain layers and cloud shapes are hand-drawn SVG bezier curves.
 - **[CSS custom properties (variables)](https://developer.mozilla.org/en-US/docs/Web/CSS/--*)** — The entire light/dark theme system runs on CSS custom properties toggled by a `data-theme` attribute.
 - **[Google Fonts — JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono)** — Monospace font used in the editor and output panels.
 
