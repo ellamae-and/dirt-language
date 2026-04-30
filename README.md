@@ -113,7 +113,68 @@ A Dirt program goes through three stages:
 
 The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Database` class in `server/src/database.ts` provides a reusable interface with `Connect()`, `Disconnect()`, and `Execute()` methods. The `Program` class in `server/src/program.ts` implements the Active Record pattern with full CRUD operations.
 
-## Known Issues
+## Outside Sources & Acknowledgments
+
+### Runtime & Build Tools
+
+- **[TypeScript](https://www.typescriptlang.org/)** — Language the entire project is written in. Static types kept the interpreter from becoming a nightmare.
+- **[Node.js](https://nodejs.org/)** — JavaScript runtime for the CLI runner and backend server.
+- **[Vite](https://vitejs.dev/)** — Frontend build tool and dev server for the web IDE. Hot module replacement saved hours.
+- **[tsx](https://github.com/privatenumber/tsx)** — TypeScript execution engine used to run the unit tests without a compile step.
+- **[npm](https://www.npmjs.com/)** — Package manager. Responsible for the `node_modules` folder that should not be in the repo but is.
+
+### Code Editor
+
+- **[CodeMirror 6](https://codemirror.net/)** — The code editor embedded in the web IDE. Replaced a hand-rolled textarea/overlay system.
+- **[@codemirror/view](https://www.npmjs.com/package/@codemirror/view)** — Editor view layer — line numbers, draw selection, update listeners, theme compartments.
+- **[@codemirror/state](https://www.npmjs.com/package/@codemirror/state)** — Editor state management and Compartment API for hot-swapping themes at runtime.
+- **[@codemirror/commands](https://www.npmjs.com/package/@codemirror/commands)** — Default keybindings and undo/redo history.
+- **[@codemirror/lang-javascript](https://www.npmjs.com/package/@codemirror/lang-javascript)** — JavaScript grammar used for syntax highlighting (Dirt's syntax is close enough to JS that it works).
+- **[@codemirror/language](https://www.npmjs.com/package/@codemirror/language)** — `HighlightStyle.define()` and `syntaxHighlighting()` for token color definitions.
+- **[@lezer/highlight](https://www.npmjs.com/package/@lezer/highlight)** — Tag system (`tags.keyword`, `tags.number`, etc.) used to target token types for highlighting.
+
+### Backend & Database
+
+- **[Express](https://expressjs.com/)** — HTTP server framework for the REST API.
+- **[cors](https://www.npmjs.com/package/cors)** — CORS middleware so the frontend can talk to the backend on a different port.
+- **[better-sqlite3](https://github.com/WiseLibs/better-sqlite3)** — Synchronous SQLite driver for Node.js. Stores saved programs.
+- **[SQLite](https://www.sqlite.org/)** — The actual database engine under `better-sqlite3`. Zero-config, single-file persistence.
+
+### UI & Notifications
+
+- **[Toastify-js](https://github.com/apvarun/toastify-js)** — Toast notification popups for save/delete confirmations in the IDE.
+
+### Concepts & Inspiration
+
+- **[Crafting Interpreters](https://craftinginterpreters.com/)** by Robert Nystrom — The bible for building a language from scratch. The tree-walk interpreter architecture, recursive descent parser structure, and environment scope chain design are all influenced by this book.
+- **[The Super Tiny Compiler](https://github.com/jamiebuilds/the-super-tiny-compiler)** — Helped clarify the mental model of lexer → parser → interpreter as a pipeline.
+- **[MDN Web Docs — Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)** — Reference for `CanvasRenderingContext2D` methods (`fillRect`, `arc`, `beginPath`, etc.) used in the graphics builtins.
+- **[MDN Web Docs — KeyboardEvent.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)** — Reference for key name strings used by `keyDown()`.
+- **[MDN Web Docs — requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame)** — How the game loop runs at ~60fps.
+
+### CSS & Visual Design
+
+- **[CSS box-shadow star fields](https://css-tricks.com/)** — The dark mode star effect uses `box-shadow` on pseudo-elements to scatter pixel-sized dots across the viewport.
+- **[CSS @keyframes](https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes)** — Used for cloud drift animation, star twinkling, hex logo sway, and the sky breathing effect.
+- **[SVG path syntax](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths)** — The grass terrain layers and cloud shapes are hand-drawn SVG bezier curves.
+- **[CSS custom properties (variables)](https://developer.mozilla.org/en-US/docs/Web/CSS/--*)** — The entire light/dark theme system runs on CSS custom properties toggled by a `data-theme` attribute.
+- **[Google Fonts — JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono)** — Monospace font used in the editor and output panels.
+
+### Node.js Standard Library
+
+- **[node:fs](https://nodejs.org/api/fs.html)** — File system module for reading `.dirt` source files from disk and writing error logs.
+- **[node:path](https://nodejs.org/api/path.html)** — Path resolution for converting relative file paths to absolute paths.
+- **[node:assert](https://nodejs.org/api/assert.html)** — Assertion module used by the unit tests. Zero-dependency testing.
+- **[process.argv](https://nodejs.org/api/process.html#processargv)** — Command-line argument parsing for the CLI runner.
+
+### Browser APIs
+
+- **[Canvas 2D Context](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D)** — `fillRect()`, `arc()`, `fill()`, `beginPath()`, `closePath()` for all Dirt graphics output.
+- **[localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)** — Persists the user's light/dark theme preference across sessions.
+- **[Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)** — All frontend-to-backend communication for saving, loading, and deleting programs.
+- **[window.matchMedia](https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia)** — Detects the user's OS-level dark mode preference on first load.
+
+
 
 **Error messages sometimes point to the wrong line.**
 The lexer records token positions *after* advancing the cursor instead of before. I know exactly why it's broken. I do not know exactly how to fix it without breaking six other things. This is a tomorrow problem. It has been a tomorrow problem for three weeks.
@@ -155,6 +216,9 @@ Because I named it that.
 
 **Is it fast?**
 It's a tree-walk interpreter. It's as fast as it needs to be. Don't benchmark it.
+
+**Can I contribute?**
+You want to contribute to a language that doesn't have arrays? I respect the energy, but no.
 
 **Should I use this in production?**
 I am begging you not to.
