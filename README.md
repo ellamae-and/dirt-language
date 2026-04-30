@@ -113,6 +113,16 @@ A Dirt program goes through three stages:
 
 The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Database` class in `server/src/database.ts` provides a reusable interface with `Connect()`, `Disconnect()`, and `Execute()` methods. The `Program` class in `server/src/program.ts` implements the Active Record pattern with full CRUD operations.
 
+### Disclaimer
+ No tokens were harmed in the making of this language. Several were, however, ruthlessly consumed by the parser.
+
+### FAQ
+Does Dirt support arrays? No.
+Classes? No.
+Why is it called Dirt? Because I named it that.
+Should I use this in production? I am begging you not to.
+
+
 ## Author
 
 Ella Anderson — CSC 470 Final Project
