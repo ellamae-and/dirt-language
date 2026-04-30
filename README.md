@@ -116,7 +116,7 @@ The server uses SQLite (via `better-sqlite3`) to persist saved programs. The `Da
 ## Known Issues
 
 **Error messages sometimes point to the wrong line.**
-The lexer records token positions *after* advancing the cursor instead of before. I know exactly what's wrong. I know exactly how to fix it. It's one line. I will get to it. Eventually. Probably.
+The lexer records token positions *after* advancing the cursor instead of before. I know exactly why it's broken. I do not know exactly how to fix it without breaking six other things. This is a tomorrow problem. It has been a tomorrow problem for three weeks.
 
 **There are no arrays.**
 If you need a list of things, you get to do what I did in the spirograph demo: `let p0x = 0; let p1x = 0; let p2x = 0; let p3x = 0;` and so on. It builds character.
