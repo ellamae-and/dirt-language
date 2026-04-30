@@ -124,7 +124,7 @@ If you need a list of things, you get to do what I did in the spirograph demo: `
 **You can't do `x += 1`.**
 It's `x = x + 1;` like our ancestors intended.
 
-**Single-line `if` statements without braces will ruin your day.**
+**Single-line `if` statements without braces will ruin my day.**
 Just use the braces. Trust me.
 
 **The server doesn't tell you if the port is already in use.**
