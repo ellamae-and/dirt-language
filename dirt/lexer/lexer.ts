@@ -5,7 +5,6 @@
 // understand structure (if-statements, loops, function calls), it needs the
 // source broken into labeled pieces. That's what this file does.
 //
-// Think of it like reading a sentence out loud and labeling each word:
 //   "let x = 5 + 3;"
 //    ^^^             → keyword "let"
 //        ^           → identifier "x"
@@ -15,9 +14,7 @@
 //                ^   → number literal 3
 //                  ^ → semicolon
 //
-// The lexer has no idea what the program *means* — it doesn't know that "let"
-// starts a variable declaration, or that + adds two numbers. It just recognizes
-// shapes. The parser figures out meaning in the next step.
+// This just recognizes shapes. The parser figures out meaning in the next step.
 //
 // Output: a flat Token[] array, always ending with an EOF sentinel token.
 
@@ -52,7 +49,8 @@ export function lex(source: string): Token[] {
   //   and pass it in explicitly.
   //
   //   Getting this right matters for error messages: if we store the wrong index,
-  //   the IDE will highlight the wrong line when it reports an error.
+  //   the IDE will highlight the wrong line when it reports an error. This is what is happening
+  //   right now, but I'm in too deep now to go back because everything is built on top of it
   const add = (type: TokenType, lexeme: string, literal?: number | string, startIndex?: number) => {
     tokens.push({ type, lexeme, literal, index: startIndex ?? i });
   };

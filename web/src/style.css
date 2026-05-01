@@ -81,7 +81,9 @@
 
 /* 2. BASE RESET */
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { 
+  box-sizing: border-box; 
+}
 
 html, body {
   height:   100%;
@@ -91,8 +93,6 @@ html, body {
 body {
   margin:      0;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  /* Soft blue-green sky — picks up the IDE's cool border blues and green accent.
-     Calm and tinted but not washed out grey. Dissolves into --bg at the bottom. */
   background: linear-gradient(
     to bottom,
     #b8cfe0 0%,
@@ -143,7 +143,6 @@ body::after {
   z-index:          0;
   opacity:          0;
   transition:       opacity 0.4s;
-  /* Very slow twinkle — fades the whole star field in and out gently */
   animation: starTwinkle 18s ease-in-out infinite alternate;
 }
 
@@ -153,7 +152,7 @@ body::after {
   to   { opacity: 0.6;  }
 }
 
-/* Dim star layer — scattered across full viewport width and down to ~70% height */
+/* Dim star layer */
 :root[data-theme="dark"] body::before {
   animation: starTwinkle 18s ease-in-out infinite alternate;
   background: transparent;
@@ -184,7 +183,7 @@ body::after {
    1510px 670px #a8bcc8, 1700px 645px #d8e4ee,  1890px 665px #c8d8e8;
 }
 
-/* Bright accent stars — sparser, 2px, full width and height */
+/* Bright accent stars */
 :root[data-theme="dark"] body::after {
   animation: starTwinkle 24s ease-in-out infinite alternate-reverse;
   width:        2px;
@@ -223,7 +222,6 @@ body::after {
   animation:      cloudDrift linear infinite;
 }
 
-/* Single flat fill + soft outline — sits calmly against the muted sky */
 .cloud-shape {
   fill:         rgba(255,255,255,0.70);
   stroke:       rgba(100,120,140,0.20);
@@ -238,10 +236,7 @@ body::after {
   to   { transform: translateX(-210vw); }
 }
 
-/* Grass / soil layers — three SVGs fixed to the bottom of the viewport.
-   Each layer shares .bg-grass for positioning; --back/--mid/--front control
-   fill depth and a subtle highlight stroke along the top edge for a clean
-   silhouette cut rather than a soft fade. */
+/* Grass / soil layers — three SVGs fixed to the bottom of the viewport. */
 .bg-grass {
   position:       fixed;
   bottom:         0;
@@ -253,28 +248,56 @@ body::after {
 }
 
 .bg-grass path {
-  /* stroke traces the top bezier edge — gives a crisp grass-line silhouette */
   stroke-width: 1.5;
   fill-opacity: 1;
 }
 
 /* Back layer — muted sage, sits highest */
-.bg-grass--back  path { fill: #7a9478; stroke: #86a084; opacity: 0.22; }
+.bg-grass--back  path { 
+  fill: #7a9478; 
+  stroke: #86a084;
+  opacity: 0.22; 
+}
 /* Mid layer */
-.bg-grass--mid   path { fill: #6e8a6c; stroke: #7a9678; opacity: 0.32; }
+.bg-grass--mid   path { 
+  fill: #6e8a6c; 
+  stroke: #7a9678; 
+  opacity: 0.32; 
+}
 /* Front layer */
-.bg-grass--front path { fill: #628060; stroke: #6e8c6c; opacity: 0.42; }
+.bg-grass--front path { 
+  fill: #628060; 
+  stroke: #6e8c6c; 
+  opacity: 0.42; 
+}
 
-:root[data-theme="dark"] .bg-grass--back  path { fill: #1a2420; stroke: #202c28; opacity: 0.30; }
-:root[data-theme="dark"] .bg-grass--mid   path { fill: #1c2822; stroke: #222e28; opacity: 0.42; }
-:root[data-theme="dark"] .bg-grass--front path { fill: #1e2c24; stroke: #243228; opacity: 0.55; }
+:root[data-theme="dark"] 
+.bg-grass--back  path { 
+  fill: #1a2420;
+  stroke: #202c28; 
+  opacity: 0.30; 
+}
+
+:root[data-theme="dark"] 
+.bg-grass--mid   path { 
+  fill: #1c2822; 
+  stroke: #222e28; 
+  opacity: 0.42;
+ }
+
+:root[data-theme="dark"] 
+.bg-grass--front path { 
+  fill: #1e2c24; 
+  stroke: #243228; 
+  opacity: 0.55; 
+}
 
 
 /* 4. APP SHELL */
 
 .app {
   position:       relative;
-  z-index:        1;       /* sits above clouds (z-index:0) */
+  z-index:        1;      
   max-width:      1080px;
   width:          100%;
   height:         100vh;
@@ -315,9 +338,16 @@ body::after {
   gap:            8px;
 }
 
-.header p  { margin: 4px 0 0; color: var(--text-3); font-size: 13px; }
+.header p  { 
+  margin: 4px 0 0; 
+  color: var(--text-3); 
+  font-size: 13px; 
+}
 
-.header-right { display: flex; gap: 8px; }
+.header-right { 
+  display: flex; 
+  gap: 8px; 
+}
 
 .hex-logo  {
   flex-shrink: 0;
@@ -332,8 +362,15 @@ body::after {
   animation: hexSpin 18s linear infinite;
 }
 
-.hex-fill  { fill: #16a34a; opacity: 0.18; }
-.hex-dirt  { fill: #b45309; opacity: 0.65; }
+.hex-fill  { 
+  fill: #16a34a; 
+  opacity: 0.18; 
+}
+
+.hex-dirt  { 
+  fill: #b45309; 
+  opacity: 0.65; 
+}
 
 .hex-stem  {
   stroke: #16a34a; fill: none;
@@ -362,7 +399,6 @@ body::after {
   .hex-fill { opacity: 0.18; }
   .hex-dirt { opacity: 0.65; }
   .bg-cloud { animation: none; display: none; }
-  /* Grass stays visible with reduced motion — it has no animation anyway */
 }
 
 .icon-btn {
@@ -372,14 +408,26 @@ body::after {
   color: var(--text-2); font-size: 13px; font-weight: 600;
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.icon-btn:hover { background: var(--secondary-btn); color: var(--text); }
+
+.icon-btn:hover { 
+  background: var(--secondary-btn); 
+  color: var(--text); 
+}
 
 
 /* 6. TOPBAR */
 
-.content { background: var(--surface); padding: 18px 20px 20px; }
+.content { 
+  background: var(--surface); 
+  padding: 18px 20px 20px; 
+}
 
-.topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.topbar { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  margin-bottom: 16px; 
+}
 
 .label {
   font-weight: 600; color: var(--text-3);
@@ -387,7 +435,10 @@ body::after {
   letter-spacing: 0.06em; white-space: nowrap;
 }
 
-.select-wrap { position: relative; width: 260px; }
+.select-wrap { 
+  position: relative; 
+  width: 260px; 
+}
 
 .select {
   width: 100%; appearance: none;
@@ -395,7 +446,10 @@ body::after {
   background: var(--beige); padding: 9px 32px 9px 12px;
   color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.select:focus { outline: none; border-color: var(--border-strong); }
+.select:focus { 
+  outline: none; 
+  border-color: var(--border-strong); 
+}
 
 .chev {
   position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
@@ -426,13 +480,17 @@ body::after {
   display: flex; flex-direction: column;
 }
 
-.editor-card { padding: 12px; }
+.editor-card { 
+  padding: 12px; 
+}
 
 /* #editor is the CM6 mount point. CM6 injects .cm-editor inside it.
    Colors, fonts, and token styles are defined in main.ts via EditorView.theme()
    and HighlightStyle — not here — because CM6's injected <style> blocks
    don't resolve external CSS variables. */
-.editor { flex: 1; }
+.editor { 
+  flex: 1; 
+}
 
 .editor .cm-editor {
   border-radius: 8px;
@@ -440,9 +498,19 @@ body::after {
   overflow:      hidden;
 }
 
-.editor .cm-scroller::-webkit-scrollbar       { width: 6px; height: 6px; }
-.editor .cm-scroller::-webkit-scrollbar-track { background: transparent; }
-.editor .cm-scroller::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.editor .cm-scroller::-webkit-scrollbar       { 
+  width: 6px; 
+  height: 6px; 
+}
+
+.editor .cm-scroller::-webkit-scrollbar-track { 
+  background: transparent; 
+}
+
+.editor .cm-scroller::-webkit-scrollbar-thumb { 
+  background: var(--border-strong); 
+  border-radius: 3px; 
+}
 
 .error-bar {
   margin-top: 8px; padding: 8px 12px; border-radius: 7px;
@@ -464,8 +532,17 @@ body::after {
   user-select: none; flex-shrink: 0;
 }
 
-.status-left  { display: flex; gap: 16px; align-items: center; }
-.status-right { display: flex; gap: 10px; align-items: center; }
+.status-left  { 
+  display: flex; 
+  gap: 16px; 
+  align-items: center; 
+}
+
+.status-right { 
+  display: flex; 
+  gap: 10px; 
+  align-items: center; 
+}
 
 .status-pill {
   background: var(--border); color: var(--text-2);
@@ -473,7 +550,12 @@ body::after {
   font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
 }
 
-.actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.actions { 
+  display: flex; 
+  gap: 8px; 
+  align-items: center; 
+  margin-top: 10px; 
+}
 
 .btn {
   border: 1px solid transparent; border-radius: 8px; padding: 9px 16px;
@@ -503,41 +585,110 @@ body::after {
 
 /* 9. OUTPUT CARD */
 
-.tabs { display: flex; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tabs { 
+  display: flex; 
+  gap: 2px; 
+  padding: 8px 8px 0; 
+  border-bottom: 1px solid var(--border); 
+  flex-shrink: 0; 
+}
 
 .tab {
-  background: transparent; border: 1px solid transparent; border-bottom: none;
-  color: var(--text-3); padding: 7px 12px; border-radius: 7px 7px 0 0;
-  font-weight: 600; font-size: 12.5px; cursor: pointer; transition: color 0.12s, background 0.12s;
+  background: transparent; 
+  border: 1px solid transparent; 
+  border-bottom: none;
+  color: var(--text-3); 
+  padding: 7px 12px; 
+  border-radius: 7px 7px 0 0;
+  font-weight: 600; 
+  font-size: 12.5px; 
+  cursor: pointer; 
+  transition: color 0.12s, background 0.12s;
 }
-.tab:hover { color: var(--text-2); }
+.tab:hover { 
+  color: var(--text-2); 
+}
+
 .tab.is-active {
-  background: var(--tab-active-bg); color: var(--text);
-  border-color: var(--tab-active-border); border-bottom-color: var(--tab-active-bg); margin-bottom: -1px;
+  background: var(--tab-active-bg); 
+  color: var(--text);
+  border-color: var(--tab-active-border); 
+  border-bottom-color: var(--tab-active-bg); 
+  margin-bottom: -1px;
 }
 
 .output {
-  padding: 12px 14px; min-height: 359px; max-height: 359px;
-  overflow-y: auto; background: var(--surface); flex: 1;
-  font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text);
+  padding: 12px 14px; 
+  min-height: 359px; 
+  max-height: 359px;
+  overflow-y: auto; 
+  background: var(--surface); 
+  flex: 1;
+  font-family: var(--mono); 
+  font-size: 13px; 
+  line-height: 1.6; 
+  color: var(--text);
 }
 
-.out-row    { display: flex; align-items: baseline; gap: 8px; min-height: 1.6em; }
-.out-ts     { font-size: 10.5px; color: var(--text-3); min-width: 54px; flex-shrink: 0; font-family: var(--mono); user-select: none; }
-.out-prefix-ok  { color: var(--output-green); font-weight: 700; flex-shrink: 0; }
-.out-prefix-err { color: #dc2626; font-weight: 700; flex-shrink: 0; }
+.out-row    { 
+  display: flex; 
+  align-items: baseline; 
+  gap: 8px; 
+  min-height: 1.6em; 
+}
+
+.out-ts     { 
+  font-size: 10.5px; 
+  color: var(--text-3); 
+  min-width: 54px; 
+  flex-shrink: 0; 
+  font-family: var(--mono); 
+  user-select: none; 
+}
+
+.out-prefix-ok  { 
+  color: var(--output-green); 
+  font-weight: 700; 
+  flex-shrink: 0; 
+}
+
+.out-prefix-err {  
+  color: #dc2626; 
+  font-weight: 700; 
+  flex-shrink: 0; 
+}
+
 :root[data-theme="dark"] .out-prefix-err { color: #f87171; }
-.out-msg-ok  { color: var(--text); }
-.out-msg-err { color: #dc2626; }
+
+.out-msg-ok  { 
+  color: var(--text); 
+}
+
+.out-msg-err { 
+  color: #dc2626; 
+ }
+
 :root[data-theme="dark"] .out-msg-err { color: #f87171; }
-.out-empty   { color: var(--text-3); font-style: italic; font-size: 12.5px; padding-top: 2px; }
+.out-empty   { 
+  color: var(--text-3); 
+  font-style: italic; 
+  font-size: 12.5px; 
+  padding-top: 2px; 
+}
 
 .canvas-pane {
-  margin: -12px -14px; height: calc(359px + 24px);
-  display: flex; align-items: center; justify-content: center;
-  background: #060b14; line-height: 0;
+  margin: -12px -14px; 
+  height: calc(359px + 24px);
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  background: #060b14; 
+  line-height: 0;
 }
-.canvas-pane canvas { display: block; width: 100%; height: auto; }
+.canvas-pane canvas { 
+  display: block; 
+  width: 100%; 
+  height: auto; }
 
 
 /* 10. UTILITIES + SCROLLBARS + RESPONSIVE */
