@@ -86,6 +86,10 @@ project-ellaand/
 └── README.md
 ```
 
+## Documentation
+ 
+For a complete guide to writing Dirt programs — syntax, data types, operators, functions, graphics, and everything the language does not have — see **[Dirt_Language_Reference.docx](planning-components/Dirt_Language_Reference.docx)**.
+
 ## How the Language Works
 
 A Dirt program goes through three stages:
