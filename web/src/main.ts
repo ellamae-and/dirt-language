@@ -2,11 +2,13 @@
 //
 // Entry point for the browser-based IDE. Handles:
 //   - Theme toggling (light / dark)
-//   - Background sky/stars/soil canvas animation
-//   - CodeMirror 6 code editor with syntax highlighting and line numbers
+//   - CodeMirror 6 editor with syntax highlighting and line numbers
 //   - Running Dirt programs and displaying output / tokens / AST / env
 //   - Canvas game loop for graphical Dirt programs
 //   - Project management (load, save, delete) via the backend API
+//
+// Background visuals are handled entirely by CSS — animated SVG clouds in
+// index.html + a CSS gradient on the body. No canvas background here.
 
 import "./style.css";
 import Toastify from "toastify-js";
@@ -17,8 +19,6 @@ import { EditorView, keymap, lineNumbers, drawSelection }   from "@codemirror/vi
 import { EditorState, Compartment }                          from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap }             from "@codemirror/commands";
 import { javascript }                                        from "@codemirror/lang-javascript";
-// HighlightStyle lets us define explicit token colors that CM6 injects into its
-// own <style> tag — the only reliable way to control syntax colors in CM6.
 import { syntaxHighlighting, HighlightStyle }                from "@codemirror/language";
 import { tags }                                              from "@lezer/highlight";
 
@@ -42,15 +42,13 @@ function setTheme(mode: "light" | "dark") {
   if (dark) root.setAttribute("data-theme", "dark");
   else      root.removeAttribute("data-theme");
   iconText.textContent = dark ? "Dark" : "Light";
-  // Swap the CM6 highlight style to match the new theme (defined below).
+  // Hot-swap only the syntax highlight compartment; the base theme (bg, gutter)
+  // is swapped by the separate click listener below that runs AFTER data-theme flips.
   cmView?.dispatch({ effects: highlightCompartment.reconfigure(syntaxHighlighting(dark ? darkHighlight : lightHighlight)) });
 }
 
-// Store the preference now but DO NOT call setTheme() yet. cmView is declared
-// with `let` further down the file and is in the Temporal Dead Zone until that
-// line executes. Even `cmView?.dispatch` throws a ReferenceError on a TDZ
-// binding — optional chaining doesn't protect against TDZ, only against null/undefined.
-// We apply the theme right after cmView is constructed (see below).
+// Read saved preference but don't call setTheme() yet — cmView is in the TDZ
+// until its declaration below. We apply the theme right after cmView is built.
 const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
 
 themeToggle.addEventListener("click", () => {
@@ -80,48 +78,41 @@ const statusLines  = document.querySelector<HTMLSpanElement>("#statusLines")!;
 const unsavedLabel = document.querySelector<HTMLSpanElement>("#unsavedLabel")!;
 const tabs         = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
 const panes        = Array.from(document.querySelectorAll<HTMLElement>("[data-pane]"));
-const bgCanvas     = document.querySelector<HTMLCanvasElement>("#sporeBg")!;
-const bgCtx        = bgCanvas.getContext("2d")!;
 
 
 // ─── CODEMIRROR 6 EDITOR ──────────────────────────────────────────────────────
 
 // ── Syntax highlight styles ──────────────────────────────────────────────────
-// CM6 injects HighlightStyle rules into its own <style> tag. one for light and one for dark, then
-// swap them via a Compartment whenever the user toggles the theme.
+// One style for light, one for dark. Swapped via a Compartment on theme toggle.
+// Colors are literal values — CM6's injected <style> blocks ignore CSS variables.
 
 const lightHighlight = HighlightStyle.define([
-  { tag: [tags.keyword, tags.operator],              color: "#7c3aed" },
-  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
-                                                     color: "#16a34a", fontWeight: "500" },
-  { tag: tags.number,                                color: "#b45309" },
-  { tag: [tags.string, tags.special(tags.string)],   color: "#0369a1" },
-  { tag: tags.comment,                               color: "#8b92a0", fontStyle: "italic" },
-  { tag: tags.variableName,                          color: "#0f1117" },
-  { tag: tags.punctuation,                           color: "#8b92a0" },
-  { tag: tags.bool,                                  color: "#7c3aed" },
+  { tag: [tags.keyword, tags.operator],                                            color: "#7c3aed" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],     color: "#16a34a", fontWeight: "500" },
+  { tag: tags.number,                                                              color: "#b45309" },
+  { tag: [tags.string, tags.special(tags.string)],                                 color: "#0369a1" },
+  { tag: tags.comment,                                                             color: "#8b92a0", fontStyle: "italic" },
+  { tag: tags.variableName,                                                        color: "#0f1117" },
+  { tag: tags.punctuation,                                                         color: "#8b92a0" },
+  { tag: tags.bool,                                                                color: "#7c3aed" },
 ]);
 
 const darkHighlight = HighlightStyle.define([
-  { tag: [tags.keyword, tags.operator],              color: "#a78bfa" },
-  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
-                                                     color: "#22c55e", fontWeight: "500" },
-  { tag: tags.number,                                color: "#f59e0b" },
-  { tag: [tags.string, tags.special(tags.string)],   color: "#38bdf8" },
-  { tag: tags.comment,                               color: "#4f647c", fontStyle: "italic" },
-  { tag: tags.variableName,                          color: "#e8ecf4" },
-  { tag: tags.punctuation,                           color: "#4f647c" },
-  { tag: tags.bool,                                  color: "#a78bfa" },
+  { tag: [tags.keyword, tags.operator],                                            color: "#a78bfa" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],     color: "#22c55e", fontWeight: "500" },
+  { tag: tags.number,                                                              color: "#f59e0b" },
+  { tag: [tags.string, tags.special(tags.string)],                                 color: "#38bdf8" },
+  { tag: tags.comment,                                                             color: "#4f647c", fontStyle: "italic" },
+  { tag: tags.variableName,                                                        color: "#e8ecf4" },
+  { tag: tags.punctuation,                                                         color: "#4f647c" },
+  { tag: tags.bool,                                                                color: "#a78bfa" },
 ]);
 
-// A Compartment lets us hot-swap the highlight style at runtime when the theme
-// changes, without rebuilding the entire editor state.
+// Compartments let us hot-swap extensions at runtime without rebuilding editor state.
 const highlightCompartment = new Compartment();
+const themeCompartment     = new Compartment();
 
-// ── Editor theme (layout/colors, not syntax) ─────────────────────────────────
-// EditorView.theme() uses literal values. CSS variables don't resolve inside
-// CM6's injected <style> blocks,
-
+// ── Editor base themes (layout/gutter/bg colors) ────────────────────────────
 const lightTheme = EditorView.theme({
   "&":                  { height: "310px", fontSize: "13.5px", background: "#f4f5f7" },
   ".cm-scroller":       { fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace", lineHeight: "22px", overflow: "auto" },
@@ -148,12 +139,7 @@ const darkTheme = EditorView.theme({
   ".cm-cursor":            { borderLeftColor: "#22c55e" },
 }, { dark: true });
 
-// Another Compartment for the base theme so it can be swapped on toggle too.
-const themeCompartment = new Compartment();
-
-// ── Update listener ───────────────────────────────────────────────────────────
-// Fires on every document change or cursor movement. replaces the three
-// separate textarea event listeners the old code needed.
+// Fires on every doc change or cursor move — keeps the status bar in sync.
 const updateListener = EditorView.updateListener.of(update => {
   if (update.docChanged || update.selectionSet) {
     updateStatusBar();
@@ -161,10 +147,8 @@ const updateListener = EditorView.updateListener.of(update => {
   }
 });
 
-// ── Initial theme detection ───────────────────────────────────────────────────
 const isDarkOnLoad = (localStorage.getItem("theme") ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
 
-// ── Build editor ──────────────────────────────────────────────────────────────
 const cmState = EditorState.create({
   doc: "",
   extensions: [
@@ -179,140 +163,25 @@ const cmState = EditorState.create({
   ],
 });
 
-// cmView must be declared with `let` so setTheme() can reference it at definition
-// time without a const TDZ crash. It is assigned immediately below.
+// `let` so setTheme() can reference cmView at definition time without a TDZ crash.
 let cmView: EditorView;
 cmView = new EditorView({ state: cmState, parent: editorMount });
 
-// NOW it is safe to apply the saved theme — cmView exists and all the highlight/
-// theme compartment consts above are fully initialized.
+// Safe to apply the saved theme now that cmView exists.
 setTheme(savedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
-// When the toggle is clicked, setTheme() already flipped data-theme to the NEW
-// value before this listener fires. So we read data-theme directly — no inversion.
-// This listener syncs the CM6 base-theme compartment (bg, gutter, cursor) which
-// setTheme() can't reach because it only touches the highlight compartment.
+// Sync the CM6 base theme (bg, gutters, cursor) when the toggle is clicked.
+// setTheme() already flipped data-theme, so we read it directly here.
 themeToggle.addEventListener("click", () => {
   const nowDark = root.getAttribute("data-theme") === "dark";
   cmView.dispatch({ effects: themeCompartment.reconfigure(nowDark ? darkTheme : lightTheme) });
 });
 
-// Read the current source text from the CM6 document.
+// Helpers to read and replace the editor content.
 const getCode = () => cmView.state.doc.toString();
 
-// Replace the entire document content in a single CM6 transaction.
 function setCode(code: string) {
-  cmView.dispatch({
-    changes: { from: 0, to: cmView.state.doc.length, insert: code },
-  });
-}
-
-
-// ─── BACKGROUND SCENE ─────────────────────────────────────────────────────────
-
-type Star = { x: number; y: number; r: number; phase: number; speed: number };
-
-// starOpMax controls peak star brightness. Light mode raised to 0.55 so the
-// blue dots are actually visible against the pale sky (was 0.45, too faint).
-const SKY = {
-  light: { star: "#4a90c4", starOpMax: 0.55 },
-  dark:  { star: "#e8ecf4", starOpMax: 0.85 },
-};
-// Three overlapping soil layers drawn at the horizon. Opacity values raised so
-// the green ground is clearly visible in both themes.
-const SOIL = {
-  light: { a: "#5a7a42", b: "#4a6835", c: "#3a5428" },
-  dark:  { a: "#3a5428", b: "#2d4420", c: "#1e3018" },
-};
-
-const STAR_COUNT = 38;
-const HORIZON_H  = 0.92;
-
-let stars: Star[] = [];
-let bgLastTs      = 0;
-
-const rand = (min: number, max: number) => min + Math.random() * (max - min);
-
-function spawnStar(): Star {
-  return {
-    x: rand(0, bgCanvas.width), y: rand(0, bgCanvas.height * 0.55),
-    r: rand(0.6, 1.8), phase: rand(0, Math.PI * 2), speed: rand(0.0005, 0.0015),
-  };
-}
-
-function initBg() {
-  bgCanvas.width  = window.innerWidth;
-  bgCanvas.height = window.innerHeight;
-  stars = Array.from({ length: STAR_COUNT }, spawnStar);
-}
-
-let bgResizeTimer: ReturnType<typeof setTimeout> | null = null;
-window.addEventListener("resize", () => {
-  if (bgResizeTimer) clearTimeout(bgResizeTimer);
-  bgResizeTimer = setTimeout(initBg, 150);
-});
-
-function drawBg(ts: number) {
-  const dt = Math.min(ts - bgLastTs, 64);
-  bgLastTs = ts;
-
-  const isDark = root.getAttribute("data-theme") === "dark";
-  const sky    = isDark ? SKY.dark  : SKY.light;
-  const soil   = isDark ? SOIL.dark : SOIL.light;
-  const w = bgCanvas.width, h = bgCanvas.height, hy = h * HORIZON_H;
-
-  bgCtx.clearRect(0, 0, w, h);
-
-  // Single gradient pass: opaque sky color at the top, fading to fully transparent
-  // at the bottom. The body background color shows through beneath it naturally.
-  // No solid fill needed — a solid fill was causing the hard blue block.
-  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, h * 0.68);
-  skyGrad.addColorStop(0,    isDark ? "rgba(5,12,30,0.94)"   : "rgba(160,206,234,0.92)");
-  skyGrad.addColorStop(0.35, isDark ? "rgba(8,18,40,0.75)"   : "rgba(184,216,240,0.70)");
-  skyGrad.addColorStop(0.70, isDark ? "rgba(10,22,44,0.30)"  : "rgba(210,232,246,0.30)");
-  skyGrad.addColorStop(1,    "rgba(0,0,0,0)");
-  bgCtx.fillStyle = skyGrad;
-  bgCtx.fillRect(0, 0, w, h * 0.68);
-
-  for (const star of stars) {
-    star.phase += star.speed * dt;
-    const alpha = (0.4 + 0.6 * (0.5 + 0.5 * Math.sin(star.phase))) * sky.starOpMax
-                  * Math.max(0, 1 - star.y / (h * 0.50));
-    if (alpha < 0.01) continue;
-    bgCtx.save();
-    bgCtx.globalAlpha = alpha;
-    bgCtx.fillStyle   = sky.star;
-    bgCtx.beginPath();
-    bgCtx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-    bgCtx.fill();
-    bgCtx.restore();
-  }
-
-  // Three bezier ground layers at the horizon. Opacity raised significantly —
-  // old values (0.08–0.28) made the soil nearly invisible in both themes.
-  for (const [color, opacity, yOff] of [
-    [soil.a, isDark ? 0.72 : 0.60,  22],  // front layer — most opaque
-    [soil.b, isDark ? 0.55 : 0.44,   0],  // mid layer
-    [soil.c, isDark ? 0.38 : 0.28, -20],  // back layer — slightly higher, most transparent
-  ] as [string, number, number][]) {
-    const y0 = hy + yOff;
-    bgCtx.save();
-    bgCtx.globalAlpha = opacity;
-    bgCtx.fillStyle   = color;
-    bgCtx.beginPath();
-    bgCtx.moveTo(0, h);
-    bgCtx.lineTo(0, y0 + 10);
-    bgCtx.bezierCurveTo(w*0.08, y0-28, w*0.18, y0+18, w*0.28, y0-10);
-    bgCtx.bezierCurveTo(w*0.38, y0-38, w*0.48, y0+22, w*0.55, y0+4);
-    bgCtx.bezierCurveTo(w*0.62, y0-14, w*0.70, y0-32, w*0.78, y0+8);
-    bgCtx.bezierCurveTo(w*0.85, y0+26, w*0.92, y0-16, w,      y0+12);
-    bgCtx.lineTo(w, h);
-    bgCtx.closePath();
-    bgCtx.fill();
-    bgCtx.restore();
-  }
-
-  requestAnimationFrame(drawBg);
+  cmView.dispatch({ changes: { from: 0, to: cmView.state.doc.length, insert: code } });
 }
 
 
@@ -336,12 +205,14 @@ let lastSavedCode = "";
 
 const API_BASE = "http://localhost:3000";
 
+// Generic fetch wrapper — throws on non-OK responses.
 async function api<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, opts);
   if (!res.ok) throw new Error(`API ${path} failed: ${res.status}`);
   return res.json();
 }
 
+// Normalise a raw DB row into a typed SavedProgram object.
 const mapRow = (row: any): SavedProgram => ({
   id:        Number(row.id),
   name:      String(row.name),
@@ -421,6 +292,7 @@ function setActiveTab(id: string) {
 
 // ─── DEBUG HELPERS ────────────────────────────────────────────────────────────
 
+// Format a single token for the Tokens tab display.
 function tokenToPrettyLine(t: any): string {
   if (t.type === undefined) return JSON.stringify(t);
   if (t.literal !== undefined) return `Token(type=${t.type}, lexeme="${t.lexeme}", literal=${t.literal})`;
@@ -428,6 +300,7 @@ function tokenToPrettyLine(t: any): string {
   return `Token(type=${t.type})`;
 }
 
+// Recursively render any AST node as an indented text tree for the AST tab.
 function astToTree(node: any, indent = ""): string {
   if (!node) return `${indent}<null>`;
   const i2 = indent + "  ";
@@ -490,22 +363,32 @@ function hideErrorBar() {
   errorBar.textContent = "";
 }
 
+// Convert a character index in the source string to a human-readable line/col.
 function offsetToLineCol(source: string, offset: number) {
   const lines = source.slice(0, Math.min(offset, source.length)).split("\n");
   return { line: lines.length, col: lines[lines.length - 1].length + 1 };
 }
 
+// Try multiple strategies to extract a character offset from an error message.
+// Returns null if nothing works — the caller will show the message without location.
 function findErrorOffset(source: string, errorMsg: string): number | null {
+  // Strategy 1: the error message contains an explicit "at index N".
   const m = errorMsg.match(/at index (\d+)/);
   if (m) return Number(m[1]);
   try {
     const tokens = lex(source);
+    // Strategy 2: the error message contains a token lexeme after "near '...'".
     const lm = errorMsg.match(/near '([^']+)'/);
     if (lm) {
       const t = tokens.find(t => t.lexeme === lm[1]);
       if (t?.index !== undefined) return t.index;
     }
-    if (tokens.length >= 2) return tokens[tokens.length - 2].index ?? null;
+    // Strategy 3: search for a quoted name anywhere in the error (e.g. undefined variable).
+    const qm = errorMsg.match(/'([^']+)'/);
+    if (qm) {
+      const t = tokens.slice().reverse().find(t => t.lexeme === qm[1]);
+      if (t?.index !== undefined) return t.index;
+    }
   } catch { }
   return null;
 }
@@ -537,6 +420,7 @@ const ctx        = gameCanvas.getContext("2d")!;
 const WIDTH = gameCanvas.width, HEIGHT = gameCanvas.height;
 let currentFillColor = "#ffffff";
 
+// Draw a dark background for every frame — called by clear() in Dirt programs.
 function drawBackground() {
   ctx.fillStyle   = "#0b1220";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -544,16 +428,18 @@ function drawBackground() {
   ctx.strokeRect(1, 1, WIDTH - 2, HEIGHT - 2);
 }
 
+// The DirtGraphicsAPI implementation backed by the game canvas.
 const dirtGraphics = {
-  clear()                                          { drawBackground(); },
-  rect(x: number, y: number, w: number, h: number){ ctx.fillStyle = currentFillColor; ctx.fillRect(x, y, w, h); },
-  circle(x: number, y: number, radius: number)    { ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fillStyle = currentFillColor; ctx.fill(); ctx.closePath(); },
-  fillColor(c: string)                             { currentFillColor = c; },
+  clear()                                            { drawBackground(); },
+  rect(x: number, y: number, w: number, h: number)  { ctx.fillStyle = currentFillColor; ctx.fillRect(x, y, w, h); },
+  circle(x: number, y: number, radius: number)       { ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fillStyle = currentFillColor; ctx.fill(); ctx.closePath(); },
+  fillColor(c: string)                               { currentFillColor = c; },
   width()  { return WIDTH;  },
   height() { return HEIGHT; },
 };
 drawBackground();
 
+// Track held keys for keyDown() in Dirt programs.
 const keysDown = new Set<string>();
 window.addEventListener("keydown", e => keysDown.add(e.key));
 window.addEventListener("keyup",   e => keysDown.delete(e.key));
@@ -597,6 +483,7 @@ function run() {
   currentFillColor = "#ffffff";
   setRunning(true);
 
+  // Defer into a new task so the "is-running" style has a chance to paint first.
   setTimeout(() => {
     const source = getCode();
     let capturedUpdateFn: DirtCallable | null = null;
@@ -619,12 +506,15 @@ function run() {
       return;
     }
 
+    // Populate the debug tabs.
     tokBox.textContent = result.tokens.map(tokenToPrettyLine).join("\n");
     astBox.textContent = astToTree(result.ast);
     envBox.textContent = JSON.stringify(result.env, null, 2);
     renderOutputPanel(result.output, undefined);
     setActiveTab("output");
 
+    // If the program registered an onUpdate handler, wire up the game loop.
+    // We re-run the program in a fresh environment so the loop has its own live state.
     if (capturedUpdateFn) {
       const tokens = lex(source);
       const program = parse(tokens);
@@ -669,6 +559,7 @@ async function renderProgramDropdown() {
     opt.textContent = p.name;
     examples.appendChild(opt);
   });
+  // Re-select the currently loaded program if it still exists.
   if (currentProgramId !== null && currentProgramSource !== null) {
     const v = `${currentProgramSource}:${currentProgramId}`;
     if (Array.from(examples.options).some(o => o.value === v)) examples.value = v;
@@ -753,27 +644,14 @@ examples.addEventListener("change", async () => {
   await loadProgramIntoEditor(source as "builtin" | "saved", Number(idText));
 });
 
-runBtn.addEventListener("click", run);
+runBtn.addEventListener("click",   run);
+clearBtn.addEventListener("click", () => { stopGameLoop(); renderEmpty(); setCode(""); setActiveTab("output"); });
+saveBtn.addEventListener("click",  async () => { try { await saveCurrentProgram();   } catch (e) { console.error(e); showToast("Could not save program.",   "error"); } });
+newBtn.addEventListener("click",   createNewProgram);
+deleteBtn.addEventListener("click", async () => { try { await deleteCurrentProgram(); } catch (e) { console.error(e); showToast("Could not delete program.", "error"); } });
 
-clearBtn.addEventListener("click", () => {
-  stopGameLoop();
-  renderEmpty();
-  setCode("");
-  setActiveTab("output");
-});
 
-saveBtn.addEventListener("click", async () => {
-  try { await saveCurrentProgram(); }
-  catch (e) { console.error(e); showToast("Could not save program.", "error"); }
-});
-
-newBtn.addEventListener("click", createNewProgram);
-
-deleteBtn.addEventListener("click", async () => {
-  try { await deleteCurrentProgram(); }
-  catch (e) { console.error(e); showToast("Could not delete program.", "error"); }
-});
-
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 
 (async function init() {
   try { await initializePrograms(); }
@@ -781,7 +659,3 @@ deleteBtn.addEventListener("click", async () => {
   renderEmpty();
   setActiveTab("output");
 })();
-
-initBg();
-bgLastTs = performance.now();
-requestAnimationFrame(drawBg);
