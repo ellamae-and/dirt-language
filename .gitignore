@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+ 
+# Build output
+dist/
+web/dist/
+server/dist/
+ 
+# Runtime data (SQLite database is auto-created)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+ 
+# Logs
+*.log
+npm-debug.log*
+ 
+# Environment files
+.env
+.env.*
+ 
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+ 
